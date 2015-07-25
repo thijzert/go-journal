@@ -91,12 +91,15 @@ func Deserialize(r io.Reader, c chan *Entry) error {
 					ent.Contents = line[len(dateFormat)+1:]
 				}
 
+				emptyLines = 0
 				continue
 			}
+			err = nil
 		}
 
 		if emptyLines > 0 {
 			ent.Contents += "\n"
+			emptyLines = 0
 		}
 		ent.Contents += line
 	}
