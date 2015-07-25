@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -111,6 +112,33 @@ func Deserialize(r io.Reader, c chan *Entry) error {
 	}
 
 	return nil
+}
+
+func Search(filename string, terms ...string) (chan *Entry, error) {
+	c := make(chan *Entry, 20)
+	rv := make(chan *Entry, 20)
+
+	go func() {
+		f, _ := os.Open(filename)
+		defer f.Close()
+
+		Deserialize(f, c)
+	}()
+	go func() {
+	Found:
+		for ee := range c {
+			for _, t := range terms {
+				if strings.Index(ee.Contents, t) == -1 {
+					continue Found
+				}
+			}
+			rv <- ee
+		}
+
+		close(rv)
+	}()
+
+	return rv, nil
 }
 
 func Add(filename string, entry *Entry) error {

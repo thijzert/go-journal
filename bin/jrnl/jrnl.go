@@ -17,8 +17,11 @@ var (
 func main() {
 	flag.Parse()
 
-	if (*act_create && *act_search) || (!*act_create && !*act_search) {
-		panic("Specify at exactly one action (--create, --search, etc)")
+	if !*act_create && !*act_search {
+		panic("Specify at least one action (--create, --search, etc)")
+	}
+	if *act_create && *act_search {
+		panic("Can't search and create a new entry.")
 	}
 
 	if *act_create {
@@ -33,6 +36,29 @@ func main() {
 		err := journal.Add(*journal_file, e)
 		if err != nil {
 			panic(err)
+		}
+	}
+	if *act_search {
+		terms := flag.Args()
+
+		result, err := journal.Search(*journal_file, terms...)
+		if err != nil {
+			panic(err)
+		}
+		var i int = 0
+
+		for e := range result {
+			// TODO: nicer formatting
+			// TODO: detect a pipe, and fall back to non-nice formatting.
+			if i > 0 {
+				os.Stdout.Write([]byte("\n"))
+			}
+			e.Serialize(os.Stdout)
+			i++
+		}
+
+		if i == 0 {
+			os.Exit(1)
 		}
 	}
 }
