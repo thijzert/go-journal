@@ -97,9 +97,9 @@ func Deserialize(r io.Reader, c chan *Entry) error {
 			err = nil
 		}
 
-		if emptyLines > 0 {
+		for emptyLines > 0 {
 			ent.Contents += "\n"
-			emptyLines = 0
+			emptyLines--
 		}
 		ent.Contents += line
 	}
