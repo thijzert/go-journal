@@ -5,6 +5,7 @@ import (
 	"github.com/thijzert/go-journal"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 var (
@@ -31,11 +32,13 @@ func main() {
 		for len(c) > 0 && c[len(c)-1] == 0x0a {
 			c = c[0 : len(c)-1]
 		}
+		// Remove carriage returns entirely. Why? Because it fits my use case, and because sod MS-DOS.
+		conts := strings.Replace(string(c), "\r", "", -1)
 
 		e := &journal.Entry{
 			Date:     t,
 			Starred:  false,
-			Contents: string(c)}
+			Contents: conts}
 
 		err := journal.Add(*journal_file, e)
 		if err != nil {
