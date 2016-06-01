@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"github.com/ametheus/go-journal"
+	"github.com/thijzert/go-journal"
 	"io/ioutil"
 	"os"
 )
