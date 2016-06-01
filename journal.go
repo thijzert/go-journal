@@ -49,6 +49,10 @@ func (e *Entry) Serialize(w io.Writer) error {
 	if er != nil {
 		return er
 	}
+	_, er = w.Write([]byte{0x0a})
+	if er != nil {
+		return er
+	}
 
 	return nil
 }
@@ -65,7 +69,7 @@ func Deserialize(r io.Reader, c chan *Entry) error {
 
 	for err == nil {
 		line, err = rr.ReadString('\n')
-		if err != nil {
+		if err != nil && line == "" {
 			break
 		}
 
@@ -80,6 +84,10 @@ func Deserialize(r io.Reader, c chan *Entry) error {
 			// Datum na een lege regel -> nieuw bericht
 			if err == nil && t.Year() > 1980 {
 				if ent != nil {
+					// Remove trailing newlines from the contents
+					for len(ent.Contents) > 0 && ent.Contents[len(ent.Contents)-1] == '\n' {
+						ent.Contents = ent.Contents[0 : len(ent.Contents)-1]
+					}
 					c <- ent
 				}
 
@@ -105,6 +113,10 @@ func Deserialize(r io.Reader, c chan *Entry) error {
 	}
 
 	if ent != nil {
+		// Remove trailing newlines from the contents
+		for len(ent.Contents) > 0 && ent.Contents[len(ent.Contents)-1] == '\n' {
+			ent.Contents = ent.Contents[0 : len(ent.Contents)-1]
+		}
 		c <- ent
 	}
 
@@ -168,24 +180,34 @@ func Add(filename string, entry *Entry) error {
 	c := make(chan *Entry, 25)
 	go Deserialize(f, c)
 
+	first := true
 	for ee := range c {
 		if entry != nil && ee.Date.After(entry.Date) {
+			if !first {
+				g.Write([]byte{0x0a})
+			}
 			err = entry.Serialize(g)
-			g.Write([]byte{0x0a})
+			first = false
 			entry = nil
 			if err != nil {
 				return err
 			}
 		}
 
+		if !first {
+			g.Write([]byte{0x0a})
+		}
 		err = ee.Serialize(g)
-		g.Write([]byte{0x0a})
 		if err != nil {
 			return err
 		}
+		first = false
 	}
 
 	if entry != nil {
+		if !first {
+			g.Write([]byte{0x0a})
+		}
 		err = entry.Serialize(g)
 		if err != nil {
 			return err

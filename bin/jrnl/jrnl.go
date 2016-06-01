@@ -27,6 +27,10 @@ func main() {
 	if *act_create {
 		t := journal.SmartTime(*date)
 		c, _ := ioutil.ReadAll(os.Stdin)
+		// Remove trailing newlines from the contents
+		for len(c) > 0 && c[len(c)-1] == 0x0a {
+			c = c[0 : len(c)-1]
+		}
 
 		e := &journal.Entry{
 			Date:     t,
