@@ -38,7 +38,15 @@ func main() {
 }
 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	executeTemplate(index, nil, w, r)
+	getv := r.URL.Query()
+
+	homeData := struct {
+		Success, Failure bool
+	}{
+		getv.Get("success") != "",
+		getv.Get("failure") != ""}
+
+	executeTemplate(index, homeData, w, r)
 }
 
 func SaveHandler(w http.ResponseWriter, r *http.Request) {
