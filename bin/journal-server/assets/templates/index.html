@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Journal</title>
+		<link rel="stylesheet" href="assets/css/app.css" />
+		<meta name="viewport" content="width=320px" />
+		<meta http-equiv="Content-type" content="text/html; charset=UTF-8" />
+		<!-- <meta name="viewport" content="width=320, initial-scale=1.0, user-scalable=no" /> -->
+	</head>
+	<body>
+		{{if .Failure}}
+			<div class="notify error"><a class="close"><i class="fa fa-close"></i></a>Error adding journal entry.</div>
+		{{end}}
+		{{if .Success}}
+			<div class="notify"><a class="close"><i class="fa fa-close"></i></a>Journal entry added.</div>
+		{{end}}
+		<form class="journal-entry" method="post" action="?foo=bar" accept-charset="UTF-8">
+			<p>
+				<input type="text" name="ts" placeholder="Timestamp" value="" />
+			</p>
+			<p>
+				<label>
+					<span>Starred:</span>
+					<input type="checkbox" name="star" />
+				</label>
+			</p>
+			<p>
+				<textarea id="ipt-body" name="body" placeholder="Body"></textarea>
+			</p>
+			<p>
+				<input type="submit" value="Save" />
+			</p>
+		</form>
+		<script>
+			document.getElementById( "ipt-body" ).focus();
+		</script>
+	</body>
+</html>
+
