@@ -7,19 +7,19 @@ import (
 	"net/http"
 )
 
-var index *template.Template
+var editor *template.Template
 
 func init() {
 	flag.Parse()
 
-	b, err := Asset("assets/templates/index.html")
+	b, err := Asset("assets/templates/editor.html")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	funcs := template.FuncMap{}
 
-	index, err = template.New("index").Funcs(funcs).Parse(string(b))
+	editor, err = template.New("editor").Funcs(funcs).Parse(string(b))
 	if err != nil {
 		log.Fatal(err)
 	}

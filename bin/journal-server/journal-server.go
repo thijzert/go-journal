@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/thijzert/go-journal"
 	"log"
@@ -26,18 +25,16 @@ func init() {
 }
 
 func main() {
-	fmt.Printf("Listening on '%s'; storing everything in '%s'.\n", *listen, *journal_file)
-
 	r := mux.NewRouter()
-	r.Methods("GET").Path("/").HandlerFunc(HomeHandler)
-	r.Methods("POST").Path("/").HandlerFunc(SaveHandler)
+	r.Methods("GET").Path("/journal").HandlerFunc(WriterHandler)
+	r.Methods("POST").Path("/journal").HandlerFunc(SaveHandler)
 	r.PathPrefix("/assets/").HandlerFunc(AssetHandler)
 
-	log.Printf("Web frontend starting on %s...\n", *listen)
+	log.Printf("Listening on '%s'; storing everything in '%s'.\n", *listen, *journal_file)
 	log.Fatal(http.ListenAndServe(*listen, r))
 }
 
-func HomeHandler(w http.ResponseWriter, r *http.Request) {
+func WriterHandler(w http.ResponseWriter, r *http.Request) {
 	getv := r.URL.Query()
 
 	homeData := struct {
@@ -46,7 +43,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 		getv.Get("success") != "",
 		getv.Get("failure") != ""}
 
-	executeTemplate(index, homeData, w, r)
+	executeTemplate(editor, homeData, w, r)
 }
 
 func SaveHandler(w http.ResponseWriter, r *http.Request) {
@@ -71,6 +68,6 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Location", "/?success=1")
+	w.Header().Set("Location", "journal?success=1")
 	w.WriteHeader(http.StatusFound)
 }
