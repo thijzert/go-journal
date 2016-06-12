@@ -11,6 +11,6 @@ cd ..
 go generate
 cd ../..
 
-go build bin/jrnl/*.go
-go build bin/journal-server/*.go
+go build -o jrnl  bin/jrnl/*.go
+go build -o journal-server  bin/journal-server/*.go
 

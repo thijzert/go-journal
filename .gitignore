@@ -3,4 +3,5 @@ journal.txt
 /bin/journal-server/assets.go
 /bin/journal-server/assets/.sass-cache
 /bin/journal-server/assets/css
-/bin/journal-server/journal-server
+/journal-server
+/jrnl
