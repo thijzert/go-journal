@@ -29,7 +29,7 @@ func init() {
 func RequireLoggedIn(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		login := context.Get(r, "login")
-		log.Printf("Checking login for %s; logged in: %v", r.URL.String(), login)
+		log.Printf("Enforcing login for %s; logged in: %v", r.URL.Path, login)
 		if login == nil {
 			w.WriteHeader(http.StatusForbidden)
 			w.Write([]byte("Access denied."))
