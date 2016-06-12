@@ -1,0 +1,71 @@
+
+$screen-width: 320px;
+
+body
+{
+	font-family: Helvetica, sans-serif;
+	width: $screen-width;
+	padding: 0;
+	margin: 0;
+}
+
+*
+{
+	box-sizing: border-box;
+}
+
+div.cb
+{
+	float: none !important;
+	clear: both !important;
+}
+
+
+
+form.journal-entry
+{
+	padding: 0px 10px;
+
+	input[type=text], textarea, input[type=submit], button
+	{
+		width: 100%;
+	}
+
+	textarea
+	{
+		height: 200px;
+		font-family: Georgia, serif;
+		font-size: 18px;
+	}
+
+	input[type=text], input[type=submit]
+	{
+		padding: 10px 20px;
+	}
+}
+
+
+div.notify
+{
+	background-color: #8FCAF0;
+	border: 2px solid #0E7EC5;
+	padding: 15px 20px;
+	margin: 15px 15px;
+
+	&.error
+	{
+		background-color: #F0CA8F;
+		border-color: #C57E0E;
+	}
+	a.close
+	{
+		float: right;
+		margin-right: 10px;
+		font-size: 16px;
+		color: #687984;
+	}
+}
+
+
+
+
