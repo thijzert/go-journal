@@ -298,6 +298,23 @@ var AllCantatas [][]Comp = [][]Comp{
 		Comp{"Anh. 211", "Der Herr ist freundlich dem, der auf ihn harret"},
 		Comp{"Anh. 212", "Vergnügende Flammen, verdoppelt die Macht"},
 	},
+	// Do we list Motets? (BWV 225-231)
+	[]Comp{
+		Comp{"232", "Hohe Messe"},
+		Comp{"233", "Lutherische Messe in F-Dur"},
+		Comp{"234", "Lutherische Messe in A-Dur"},
+		Comp{"235", "Lutherische Messe in g-Moll"},
+		Comp{"236", "Lutherische Messe in G-Dur"},
+		// Comp{"1081", "Credo in unum Deum"},
+		// Comp{"237", "Sanctus"},
+		// Comp{"238", "Sanctus"},
+		// Comp{"240", "Sanctus"},
+		// Comp{"241", "Sanctus"},
+		// Comp{"242", "Christe eleison"},
+		Comp{"243", "Magnificat"},
+		// Comp{"243a", "Magnificat"},
+		Comp{"1083", "Tilge, Höchster, meine Sünden"},
+	},
 	[]Comp{
 		Comp{"244", "Matthäus-Passion"},
 		Comp{"245", "Johannes-Passion"},
