@@ -31,6 +31,7 @@ func main() {
 	r := mux.NewRouter()
 	r.Methods("GET").Path("/journal").HandlerFunc(RequireLoggedIn(WriterHandler))
 	r.Methods("POST").Path("/journal").HandlerFunc(RequireLoggedIn(SaveHandler))
+	r.Path("/bwv").HandlerFunc(BWVHandler)
 	r.PathPrefix("/assets/").HandlerFunc(AssetHandler)
 
 	p := secretbookmark.NewHandler(r, *secret_parameter, *password_file)

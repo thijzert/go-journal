@@ -9,18 +9,27 @@ import (
 )
 
 var editor *template.Template
+var bwvlist *template.Template
 
 func init() {
 	flag.Parse()
+
+	funcs := template.FuncMap{}
 
 	b, err := Asset("assets/templates/editor.html")
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	funcs := template.FuncMap{}
-
 	editor, err = template.New("editor").Funcs(funcs).Parse(string(b))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	b, err = Asset("assets/templates/bwvlist.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+	bwvlist, err = template.New("bwvlist").Funcs(funcs).Parse(string(b))
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>BWV Checklist</title>
+		<link rel="stylesheet" href="assets/css/app.css" />
+		<meta name="viewport" content="width=320" />
+		<meta http-equiv="Content-type" content="text/html; charset=UTF-8" />
+		<!-- <meta name="viewport" content="width=320, initial-scale=1.0, user-scalable=no" /> -->
+	</head>
+	<body>
+		{{range .BWVs}}
+			<div class="BWVlist">
+				{{range .}}
+					<div class="BWV {{if .Done}}done{{else}}open{{end}}" title="{{.BWV.Title}}">{{.BWV.BWV}}</div>
+				{{end}}
+				<div style="clear: both"></div>
+			</div>
+		{{end}}
+	</body>
+</html>
+

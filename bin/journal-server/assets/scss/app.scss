@@ -4,7 +4,7 @@ $screen-width: 320px;
 body
 {
 	font-family: Helvetica, sans-serif;
-	width: $screen-width;
+	// width: $screen-width;
 	padding: 0;
 	margin: 0;
 }
@@ -63,6 +63,44 @@ div.notify
 		margin-right: 10px;
 		font-size: 16px;
 		color: #687984;
+	}
+}
+
+
+
+div.BWVlist
+{
+	$bwv-border-size: 1px;
+	$bwv-margin: 2px;
+	$bwv-width: 80px;
+	$bwv-height: 60px;
+
+	.BWV
+	{
+		font-family: Georgia, serif;
+		font-size: 16px;
+		line-height: $bwv-height - $bwv-margin - $bwv-border-size*2;
+		text-align: center;
+
+		box-sizing: border-box;
+		border: $bwv-border-size solid #888888;
+		background-color: #d8d8d8;
+
+		float: left;
+		height: $bwv-height - $bwv-margin;
+		width: $bwv-width - $bwv-margin;
+		margin: $bwv-margin / 2;
+
+		&.done
+		{
+			background-color: #B3D580;
+			border-color: darken(#B3D580, 20%);
+		}
+		&.open
+		{
+			background-color: #E69999;
+			border-color: darken(#E69999, 20%);
+		}
 	}
 }
 
