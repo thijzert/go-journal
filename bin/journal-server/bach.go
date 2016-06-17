@@ -1,8 +1,12 @@
 package main
 
 import (
+	"github.com/thijzert/go-journal"
 	"github.com/thijzert/go-journal/bach"
 	"net/http"
+	"os"
+	"regexp"
+	"strings"
 )
 
 type bwvCheck struct {
@@ -11,6 +15,33 @@ type bwvCheck struct {
 }
 
 func BWVHandler(w http.ResponseWriter, r *http.Request) {
+	doneDeal := make(map[string]bool)
+	rbwv := regexp.MustCompile("@BWV\\s+((([Aa]nh\\.?)\\s*)?(\\d+)([a-zA-Z])?(-\\d+)?)")
+
+	c := make(chan *journal.Entry, 20)
+	f, err := os.Open(*journal_file)
+	defer f.Close()
+	if err != nil {
+		errorHandler(err, w, r)
+		return
+	}
+	go func() {
+		journal.Deserialize(f, c)
+	}()
+
+	for e := range c {
+		mm := rbwv.FindAllStringSubmatch(e.Contents, -1)
+		for _, m := range mm {
+			// Normalize the BWV notation
+			norm := m[4] + strings.ToLower(m[5]) + m[6]
+			if m[3] != "" {
+				norm = "Anh. " + norm
+			}
+
+			doneDeal[norm] = true
+		}
+	}
+
 	bwvData := struct {
 		BWVs [][]bwvCheck
 	}{make([][]bwvCheck, 0)}
@@ -18,8 +49,7 @@ func BWVHandler(w http.ResponseWriter, r *http.Request) {
 	for _, sect := range bach.AllCantatas {
 		ns := make([]bwvCheck, len(sect))
 		for i, c := range sect {
-			// TODO: find out if we've done this one
-			ns[i] = bwvCheck{c, false}
+			ns[i] = bwvCheck{c, doneDeal[c.BWV]}
 		}
 		bwvData.BWVs = append(bwvData.BWVs, ns)
 	}
