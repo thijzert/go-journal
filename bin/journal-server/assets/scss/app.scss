@@ -71,14 +71,16 @@ div.notify
 div.BWVlist
 {
 	$bwv-border-size: 1px;
+	$bwv-font-size: 16px;
 	$bwv-margin: 2px;
 	$bwv-width: 80px;
 	$bwv-height: 60px;
 
+	font-family: Georgia, serif;
+
 	.BWV
 	{
-		font-family: Georgia, serif;
-		font-size: 16px;
+		font-size: $bwv-font-size;
 		line-height: $bwv-height - $bwv-margin - $bwv-border-size*2;
 		text-align: center;
 
@@ -101,6 +103,26 @@ div.BWVlist
 			background-color: #E69999;
 			border-color: darken(#E69999, 20%);
 		}
+	}
+
+	.Verzeichnis
+	{
+		float: none;
+		clear: both;
+
+		box-sizing: border-box;
+		// width: 100%;
+		min-height: $bwv-height - $bwv-margin;
+		margin: $bwv-margin / 2;
+
+		color: #333333;
+		background-color: #dddddd;
+		border: $bwv-border-size solid darken(#dddddd, 20%);
+
+		font-size: $bwv-font-size;
+		line-height: 1.25;
+		padding: ($bwv-height - (1.25 * $bwv-font-size)) / 2
+			$bwv-width * 0.2;
 	}
 }
 
