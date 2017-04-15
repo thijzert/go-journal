@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // This package requires go-bindata (github.com/jteeuwen/go-bindata) to build
@@ -31,6 +32,7 @@ func main() {
 	r := mux.NewRouter()
 	r.Methods("GET").Path("/journal").HandlerFunc(RequireLoggedIn(WriterHandler))
 	r.Methods("POST").Path("/journal").HandlerFunc(RequireLoggedIn(SaveHandler))
+	r.Path("/tie/{date}.svg").HandlerFunc(TieHandler)
 	r.Path("/bwv").HandlerFunc(BWVHandler)
 	r.PathPrefix("/assets/").HandlerFunc(AssetHandler)
 
@@ -85,4 +87,27 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Location", "journal?"+getv.Encode())
 	w.WriteHeader(http.StatusFound)
+}
+
+func TieHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	date, err := time.Parse("2006-01-02", vars["date"])
+
+	if err != nil {
+		w.Header()["Content-Type"] = []string{"text/plain"}
+		w.WriteHeader(404)
+		w.Write([]byte("No tie was found for that day.\n\nLive a little; wear a t-shirt.\n"))
+	}
+
+	w.Header()["Content-Type"] = []string{"image/svg"}
+
+	tieData := struct {
+		Colour string
+	}{"teal"}
+
+	if date.Year() == 1988 {
+		tieData.Colour = "pink"
+	}
+
+	executeTemplate(tie, tieData, w, r)
 }

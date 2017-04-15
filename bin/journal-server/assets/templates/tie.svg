@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360px" height="360px" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<g transform="translate(-184, -75)">
+		<polygon stroke="black" style="stroke-width: 4px;" points="322,124 351,135 376,135 404,124 415,147 363,171 308,145" fill="#ffffff"/>
+		<g transform="matrix(1, 0, 0, 1, 7, -1)">
+			<polygon stroke="black" style="stroke-width: 5px;" id="necktie" points="294,144 427,141 375,207 394,276 400,378 356,425 316,385 320,277 345,208" fill="{{.Colour}}"/>
+			<polyline stroke="black" style="fill: none; stroke-width: 3.5px;" id="eldredge" points="378,209 345,209 358,195 374,209 343,183 335,192 359,167 387,190 333,145"/>
+		</g>
+		<polygon stroke="black" style="stroke-width: 5px;" points="240,150 273,194 350,137 257,90" fill="#FFFFFF"/>
+		<polygon stroke="black" style="stroke-width: 5px;" points="455,188 378,137 463,89 500,145" fill="#FFFFFF"/>
+	</g>
+</svg>
+

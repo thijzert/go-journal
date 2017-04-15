@@ -10,6 +10,7 @@ import (
 
 var editor *template.Template
 var bwvlist *template.Template
+var tie *template.Template
 
 func init() {
 	flag.Parse()
@@ -30,6 +31,15 @@ func init() {
 		log.Fatal(err)
 	}
 	bwvlist, err = template.New("bwvlist").Funcs(funcs).Parse(string(b))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	b, err = Asset("assets/templates/tie.svg")
+	if err != nil {
+		log.Fatal(err)
+	}
+	tie, err = template.New("tie").Parse(string(b))
 	if err != nil {
 		log.Fatal(err)
 	}
