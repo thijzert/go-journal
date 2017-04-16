@@ -177,23 +177,28 @@ func tieColour(dt time.Time) string {
 	if ea == 0 || ea == 1 {
 		return WHITE // Easter Sunday
 	} else if ea < 0 {
-		if ea == -42 {
+		if ea == -49 {
 			return WHITE // Transfiguration Sunday
-		} else if ea == -39 {
+		} else if ea == -46 {
 			return BLACK // Ash Wednesday
 		} else if ea == -7 || ea == -3 || ea == -2 {
 			return RED // Palm Sunday / Maundy Thursday / Good Friday
-		} else if ea > -42 {
+		} else if ea > -46 {
 			return PURPLE
 		}
+	} else if ea == 39 {
+		return RED // Heaventravelday
 	} else if ea < 49 {
 		return GOLD // Season of Easter
 	} else if ea == 49 || ea == 50 {
 		return RED // Pentecost
+	} else if ea == 56 {
+		return WHITE // Trinity Sunday
 	}
-	// FIXME: when is Trinity Sunday?
 
-	// FIXME: when is All Saints?
+	if m == time.November && d == 1 {
+		return WHITE // All Saints
+	}
 
 	reignOfChrist := time.Date(y, time.November, 30, 0, 0, 0, 0, time.UTC)
 	offset := 7 - int(reignOfChrist.Weekday())
