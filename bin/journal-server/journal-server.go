@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/thijzert/go-journal"
 	"github.com/thijzert/go-journal/bin/journal-server/secretbookmark"
@@ -32,6 +33,7 @@ func main() {
 	r := mux.NewRouter()
 	r.Methods("GET").Path("/journal").HandlerFunc(RequireLoggedIn(WriterHandler))
 	r.Methods("POST").Path("/journal").HandlerFunc(RequireLoggedIn(SaveHandler))
+	r.Path("/tie").HandlerFunc(AllTiesHandler)
 	r.Path("/tie/{date}.svg").HandlerFunc(TieHandler)
 	r.Path("/bwv").HandlerFunc(BWVHandler)
 	r.PathPrefix("/assets/").HandlerFunc(AssetHandler)
@@ -89,6 +91,32 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusFound)
 }
 
+func AllTiesHandler(w http.ResponseWriter, r *http.Request) {
+	y := time.Now().Year()
+	w.Header()["Content-Type"] = []string{"text/html"}
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "<html><h1>%d</h1>", y)
+	var m time.Month = 0
+	dt, _ := time.Parse("2006-01-02", fmt.Sprintf("%d-01-01", y))
+	for dt.Year() == y {
+		if dt.Month() != m {
+			fmt.Fprintf(w, "</div><h4>%s</h4><div>", dt.Format("January"))
+			wd := (int(dt.Weekday()) + 6) % 7
+			for i := 0; i < wd; i++ {
+				fmt.Fprintf(w, "<div style=\"display: inline-block; width: 32px; height: 32px\"></div>")
+			}
+
+			m = dt.Month()
+		}
+		if dt.Weekday() == time.Monday {
+			fmt.Fprintf(w, "</div><div>")
+		}
+		fmt.Fprintf(w, "<img src=\"tie/%s.svg\" style=\"width: 32px; height: 32px\" />", dt.Format("2006-01-02"))
+		dt = dt.AddDate(0, 0, 1)
+	}
+	fmt.Fprintf(w, "</div></html>")
+}
+
 func TieHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	date, err := time.Parse("2006-01-02", vars["date"])
@@ -99,7 +127,7 @@ func TieHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("No tie was found for that day.\n\nLive a little; wear a t-shirt.\n"))
 	}
 
-	w.Header()["Content-Type"] = []string{"image/svg"}
+	w.Header()["Content-Type"] = []string{"image/svg+xml"}
 
 	tieData := struct {
 		Colour string
@@ -109,5 +137,5 @@ func TieHandler(w http.ResponseWriter, r *http.Request) {
 		tieData.Colour = "pink"
 	}
 
-	executeTemplate(tie, tieData, w, r)
+	tie.Execute(w, tieData)
 }
