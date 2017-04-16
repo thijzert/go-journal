@@ -93,12 +93,18 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 
 func AllTiesHandler(w http.ResponseWriter, r *http.Request) {
 	y := time.Now().Year()
+	ymax := y + 4
 	w.Header()["Content-Type"] = []string{"text/html"}
 	w.WriteHeader(200)
-	fmt.Fprintf(w, "<html><h1>%d</h1>", y)
+	fmt.Fprintf(w, "<html><div>")
 	var m time.Month = 0
-	dt, _ := time.Parse("2006-01-02", fmt.Sprintf("%d-01-01", y))
-	for dt.Year() == y {
+	dt, _ := time.ParseInLocation("2006-01-02", fmt.Sprintf("%d-01-01", y), time.UTC)
+	y = 0
+	for dt.Year() < ymax {
+		if dt.Year() != y {
+			y = dt.Year()
+			fmt.Fprintf(w, "</div></div><div style=\"float: left; width: 224px; margin: 0 20px;\"><h1>%d</h1><div>", y)
+		}
 		if dt.Month() != m {
 			fmt.Fprintf(w, "</div><h4>%s</h4><div>", dt.Format("January"))
 			wd := (int(dt.Weekday()) + 6) % 7
@@ -111,10 +117,100 @@ func AllTiesHandler(w http.ResponseWriter, r *http.Request) {
 		if dt.Weekday() == time.Monday {
 			fmt.Fprintf(w, "</div><div>")
 		}
-		fmt.Fprintf(w, "<img src=\"tie/%s.svg\" style=\"width: 32px; height: 32px\" />", dt.Format("2006-01-02"))
+		dfe := daysSinceEaster(dt)
+		fmt.Fprintf(w, "<img src=\"tie/%s.svg\" style=\"width: 32px; height: 32px\" data-days-since-easter=\"%d\"/>", dt.Format("2006-01-02"), dfe)
 		dt = dt.AddDate(0, 0, 1)
 	}
-	fmt.Fprintf(w, "</div></html>")
+	fmt.Fprintf(w, "</div></div></html>")
+}
+
+func eastersunday(year int) (month, day int) {
+	a := year % 19
+	b := year % 4
+	c := year % 7
+	k := year / 100
+	p := (13 + 8*k) / 25
+	q := k / 4
+	M := (15 - p + k - q) % 30
+	N := (4 + k - q) % 7
+	d := (19*a + M) % 30
+	e := (2*b + 4*c + 6*d + N) % 7
+
+	month = 3
+	day = 22 + d + e
+	if day > 31 {
+		day -= 31
+		month++
+	}
+	return
+}
+
+func daysSinceEaster(dt time.Time) int {
+	m, d := eastersunday(dt.Year())
+	ea := time.Date(dt.Year(), time.Month(m), d, 0, 0, 0, 0, time.UTC)
+	diff := dt.Sub(ea)
+	return int(int64(diff) / int64(24*time.Hour))
+}
+
+const (
+	GOLD   string = "gold"
+	GREEN         = "teal"
+	RED           = "red"
+	PURPLE        = "purple"
+	BLUE          = "blue"
+	WHITE         = "#E8EAF3"
+	BLACK         = "#151B14"
+)
+
+func tieColour(dt time.Time) string {
+	y, m, d := dt.Date()
+	wd := dt.Weekday()
+
+	if m == time.January && d <= 6 {
+		return GOLD // days 7-12 of Christmas
+	}
+	if m == time.January && d < 14 && wd == time.Sunday {
+		return WHITE // Baptism of Jesus Sunday
+	}
+
+	ea := daysSinceEaster(dt)
+	if ea == 0 || ea == 1 {
+		return WHITE // Easter Sunday
+	} else if ea < 0 {
+		if ea == -42 {
+			return WHITE // Transfiguration Sunday
+		} else if ea == -39 {
+			return BLACK // Ash Wednesday
+		} else if ea == -7 || ea == -3 || ea == -2 {
+			return RED // Palm Sunday / Maundy Thursday / Good Friday
+		} else if ea > -42 {
+			return PURPLE
+		}
+	} else if ea < 49 {
+		return GOLD // Season of Easter
+	} else if ea == 49 || ea == 50 {
+		return RED // Pentecost
+	}
+	// FIXME: when is Trinity Sunday?
+
+	// FIXME: when is All Saints?
+
+	reignOfChrist := time.Date(y, time.November, 30, 0, 0, 0, 0, time.UTC)
+	offset := 7 - int(reignOfChrist.Weekday())
+	if offset > 3 {
+		offset -= 7
+	}
+	reignOfChrist = reignOfChrist.AddDate(0, 0, offset)
+
+	if m == reignOfChrist.Month() && d == reignOfChrist.Day() {
+		return WHITE // Reign of Christ Sunday
+	} else if m == time.December && d >= 25 {
+		return GOLD // Days 1-6 of Christmas
+	} else if dt.After(reignOfChrist) {
+		return BLUE // Advent
+	}
+
+	return "green"
 }
 
 func TieHandler(w http.ResponseWriter, r *http.Request) {
@@ -131,7 +227,7 @@ func TieHandler(w http.ResponseWriter, r *http.Request) {
 
 	tieData := struct {
 		Colour string
-	}{"teal"}
+	}{tieColour(date)}
 
 	if date.Year() == 1988 {
 		tieData.Colour = "pink"
