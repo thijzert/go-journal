@@ -42,6 +42,24 @@ form.journal-entry
 	{
 		padding: 10px 20px;
 	}
+
+	#ties
+	{
+		vertical-align: top;
+
+		img
+		{
+			width: 32px;
+		}
+		a.today img
+		{
+			width: 48px;
+		}
+		a.yesterday img
+		{
+			width: 24px;
+		}
+	}
 }
 
 

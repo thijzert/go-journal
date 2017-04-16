@@ -15,14 +15,14 @@
 			<div class="notify"><a class="close"><i class="fa fa-close"></i></a>Journal entry added.</div>
 		{{end}}
 		<form class="journal-entry" method="post" action="{{.Callback}}" accept-charset="UTF-8">
-			<p>
-				<input type="text" name="ts" placeholder="Timestamp" value="" />
+			<p id="ties">
+				<a class="yesterday" href="tie/yesterday.svg"><img src="tie/yesterday.svg" /></a>
+				<a class="today" href="tie/today.svg"><img src="tie/today.svg" /></a>
+				<a class="tomorrow" href="tie/tomorrow.svg"><img src="tie/tomorrow.svg" /></a>
+				<a class="dayaftertomorrow" href="tie/dayaftertomorrow.svg"><img src="tie/dayaftertomorrow.svg" /></a>
 			</p>
 			<p>
-				<label>
-					<span>Starred:</span>
-					<input type="checkbox" name="star" />
-				</label>
+				<input type="text" name="ts" placeholder="Timestamp" value="" />
 			</p>
 			<p>
 				<textarea id="ipt-body" name="body" placeholder="Body"></textarea>

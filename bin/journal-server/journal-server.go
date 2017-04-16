@@ -215,28 +215,40 @@ func tieColour(dt time.Time) string {
 		return BLUE // Advent
 	}
 
-	return "green"
+	return GREEN
 }
 
 func TieHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	date, err := time.Parse("2006-01-02", vars["date"])
+	var date time.Time
 
-	if err != nil {
-		w.Header()["Content-Type"] = []string{"text/plain"}
-		w.WriteHeader(404)
-		w.Write([]byte("No tie was found for that day.\n\nLive a little; wear a t-shirt.\n"))
+	if vars["date"] == "today" {
+		date = time.Now()
+	} else if vars["date"] == "tomorrow" {
+		date = time.Now().AddDate(0, 0, 1)
+	} else if vars["date"] == "dayaftertomorrow" {
+		date = time.Now().AddDate(0, 0, 2)
+	} else if vars["date"] == "yesterday" {
+		date = time.Now().AddDate(0, 0, -1)
+	} else {
+		var err error
+		date, err = time.Parse("2006-01-02", vars["date"])
+
+		if err != nil {
+			w.Header()["Content-Type"] = []string{"text/plain"}
+			w.WriteHeader(404)
+			w.Write([]byte("No tie was found for that day.\n\nLive a little; wear a t-shirt.\n"))
+		}
 	}
+
+	y, m, d := date.Date()
+	date = time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 
 	w.Header()["Content-Type"] = []string{"image/svg+xml"}
 
 	tieData := struct {
 		Colour string
 	}{tieColour(date)}
-
-	if date.Year() == 1988 {
-		tieData.Colour = "pink"
-	}
 
 	tie.Execute(w, tieData)
 }
