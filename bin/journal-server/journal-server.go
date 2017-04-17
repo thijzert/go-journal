@@ -153,11 +153,11 @@ func daysSinceEaster(dt time.Time) int {
 }
 
 const (
-	GOLD   string = "gold"
-	GREEN         = "teal"
-	RED           = "red"
-	PURPLE        = "purple"
-	BLUE          = "blue"
+	GOLD   string = "#EAEA59"
+	GREEN         = "#3A9145"
+	RED           = "#D82F40"
+	PURPLE        = "#8A3A91"
+	BLUE          = "#474ED8"
 	WHITE         = "#E8EAF3"
 	BLACK         = "#151B14"
 )
