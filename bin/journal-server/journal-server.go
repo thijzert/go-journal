@@ -160,6 +160,7 @@ const (
 	BLUE          = "#474ED8"
 	WHITE         = "#E8EAF3"
 	BLACK         = "#151B14"
+	ORANGE        = "#EFAF0B"
 )
 
 func tieColour(dt time.Time) string {
@@ -171,6 +172,12 @@ func tieColour(dt time.Time) string {
 	}
 	if m == time.January && d < 14 && wd == time.Sunday {
 		return WHITE // Baptism of Jesus Sunday
+	}
+
+	if m == time.April {
+		if (d == 27 && wd != time.Sunday) || (d == 26 && wd == time.Saturday) {
+			return ORANGE // Long Live The King
+		}
 	}
 
 	ea := daysSinceEaster(dt)
