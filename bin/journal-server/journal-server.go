@@ -237,6 +237,11 @@ func TieHandler(w http.ResponseWriter, r *http.Request) {
 		date = time.Now().AddDate(0, 0, 2)
 	} else if vars["date"] == "yesterday" {
 		date = time.Now().AddDate(0, 0, -1)
+	} else if vars["date"] == "yyyy-mm-dd" || vars["date"] == "jjjj-mm-dd" {
+		w.Header()["Content-Type"] = []string{"text/plain"}
+		w.WriteHeader(400)
+		w.Write([]byte("Don't be a smartarse."))
+		return
 	} else {
 		var err error
 		date, err = time.Parse("2006-01-02", vars["date"])
@@ -245,6 +250,7 @@ func TieHandler(w http.ResponseWriter, r *http.Request) {
 			w.Header()["Content-Type"] = []string{"text/plain"}
 			w.WriteHeader(404)
 			w.Write([]byte("No tie was found for that day.\n\nLive a little; wear a t-shirt.\n"))
+			return
 		}
 	}
 
