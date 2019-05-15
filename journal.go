@@ -92,10 +92,10 @@ func Deserialize(r io.Reader, c chan *Entry) error {
 				}
 
 				ent = &Entry{Date: t}
-				if line[len(dateFormat):len(dateFormat)+3] == " * " {
+				if len(line) > len(dateFormat)+3 && line[len(dateFormat):len(dateFormat)+3] == " * " {
 					ent.Starred = true
 					ent.Contents = line[len(dateFormat)+3:]
-				} else {
+				} else if len(line) > len(dateFormat)+1 {
 					ent.Contents = line[len(dateFormat)+1:]
 				}
 
