@@ -2,10 +2,11 @@ package main
 
 import (
 	"flag"
-	"github.com/gorilla/context"
 	"html/template"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/context"
 )
 
 var editor *template.Template
@@ -48,7 +49,6 @@ func init() {
 func RequireLoggedIn(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		login := context.Get(r, "login")
-		log.Printf("Enforcing login for %s; logged in: %v", r.URL.Path, login)
 		if login == nil {
 			w.WriteHeader(http.StatusForbidden)
 			w.Write([]byte("Access denied."))

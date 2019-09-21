@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/thijzert/go-journal"
-	"github.com/thijzert/go-journal/bin/journal-server/secretbookmark"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/thijzert/go-journal"
+	"github.com/thijzert/go-journal/bin/journal-server/secretbookmark"
 )
 
 // This package requires go-bindata (github.com/jteeuwen/go-bindata) to build
@@ -38,10 +39,11 @@ func main() {
 	r.Path("/bwv").HandlerFunc(BWVHandler)
 	r.PathPrefix("/assets/").HandlerFunc(AssetHandler)
 
-	p := secretbookmark.NewHandler(r, *secret_parameter, *password_file)
+	p := secretbookmark.New(*secret_parameter, *password_file)
+	r.Use(p.Middleware)
 
 	log.Printf("Listening on '%s'; storing everything in '%s'.\n", *listen, *journal_file)
-	log.Fatal(http.ListenAndServe(*listen, p))
+	log.Fatal(http.ListenAndServe(*listen, r))
 }
 
 func WriterHandler(w http.ResponseWriter, r *http.Request) {
