@@ -16,24 +16,36 @@
 				<div style="clear: both"></div>
 			</div>
 		{{end}}
-		<div class="Verzeichnis" style="display: none;">Bringet dem Herrn Ehre seines Namens</div>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+		<div id="Verzeichnis" class="Verzeichnis" style="display: none;">Bringet dem Herrn Ehre seines Namens</div>
 		<script>
-			$(function()
+			(function()
 			{
-				var verzeichnis = $(".Verzeichnis");
-				$("body").on("click", ".BWVlist .BWV", function()
+				const verzeichnis = document.getElementById("Verzeichnis");
+				document.body.addEventListener("click", function(e)
 				{
-					var that = $(this);
-					verzeichnis.hide().text(that.attr("title"));
-					that.after(verzeichnis);
-					verzeichnis.show();
+					let bwv = e.target;
+					while ( bwv != null )
+					{
+						if ( bwv.classList && bwv.classList.contains("BWV") )
+						{
+							break;
+						}
+						bwv = bwv.parentNode;
+					};
+					if ( bwv === null )
+					{
+						return;
+					}
+
+					verzeichnis.innerText = bwv.title;
+					bwv.parentNode.insertBefore( verzeichnis, bwv )
+					verzeichnis.style.display = "block";
 				});
-				verzeichnis.click(function()
+				verzeichnis.addEventListener("click", function()
 				{
-					verzeichnis.hide();
+					verzeichnis.style.display = "none";
 				});
-			});
+			})();
 		</script>
 	</body>
 </html>
