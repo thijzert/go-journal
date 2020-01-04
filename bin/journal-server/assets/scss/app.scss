@@ -1,5 +1,5 @@
 
-$screen-width: 320px;
+$screen-width: 20rem;
 
 body
 {
@@ -88,13 +88,16 @@ div.notify
 
 div.BWVlist
 {
-	$bwv-border-size: 1px;
-	$bwv-font-size: 16px;
-	$bwv-margin: 2px;
-	$bwv-width: 80px;
-	$bwv-height: 60px;
+	$bwv-border-size: 0.0625rem;
+	$bwv-font-size: 1rem;
+	$bwv-margin: 0.125rem;
+	$bwv-width: 5rem;
+	$bwv-height: 3.75rem;
 
 	font-family: Georgia, serif;
+	display: grid;
+	grid-template-columns: repeat( auto-fill, minmax($bwv-width,1fr));
+	grid-gap: $bwv-margin;
 
 	.BWV
 	{
@@ -106,10 +109,8 @@ div.BWVlist
 		border: $bwv-border-size solid #888888;
 		background-color: #d8d8d8;
 
-		float: left;
-		height: $bwv-height - $bwv-margin;
-		width: $bwv-width - $bwv-margin;
-		margin: $bwv-margin / 2;
+		min-height: $bwv-height - $bwv-margin;
+		//min-width: $bwv-width - $bwv-margin;
 
 		&.done
 		{
@@ -127,6 +128,7 @@ div.BWVlist
 	{
 		float: none;
 		clear: both;
+		grid-column: 1 / -1;
 
 		box-sizing: border-box;
 		// width: 100%;

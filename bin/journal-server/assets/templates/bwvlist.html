@@ -3,9 +3,8 @@
 	<head>
 		<title>BWV Bucket List</title>
 		<link rel="stylesheet" href="assets/css/app.css" />
-		<meta name="viewport" content="width=320" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
 		<meta http-equiv="Content-type" content="text/html; charset=UTF-8" />
-		<!-- <meta name="viewport" content="width=320, initial-scale=1.0, user-scalable=no" /> -->
 	</head>
 	<body>
 		{{range .BWVs}}
@@ -38,7 +37,7 @@
 					}
 
 					verzeichnis.innerText = bwv.title;
-					bwv.parentNode.insertBefore( verzeichnis, bwv )
+					bwv.parentNode.insertBefore( verzeichnis, bwv.nextSibling );
 					verzeichnis.style.display = "block";
 				});
 				verzeichnis.addEventListener("click", function()
