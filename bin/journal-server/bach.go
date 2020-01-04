@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/thijzert/go-journal"
-	"github.com/thijzert/go-journal/bach"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/thijzert/go-journal"
+	"github.com/thijzert/go-journal/bach"
 )
 
 type bwvCheck struct {
