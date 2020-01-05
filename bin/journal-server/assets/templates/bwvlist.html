@@ -10,7 +10,27 @@
 		{{range .BWVs}}
 			<div class="BWVlist">
 				{{range .}}
-					<div class="BWV {{if .Done}}done{{else}}open{{end}}" title="{{.BWV.Title}}">{{.BWV.BWV}}</div>
+					<div class="BWV {{if .Done}}done{{else}}open{{end}}">
+						<div class="BWVNo">{{.BWV.BWV}}</div>
+						<div class="info">
+							<h4>BWV {{.BWV.BWV}}: {{ .BWV.Title }}</h4>
+							{{ $lp := len .Concerts }}
+							{{ if eq $lp 0 }}
+							<div><i>No performances found</i></div>
+							{{ else }}
+								{{ if eq $lp 1 }}
+								<div>1 concert</div>
+								{{ else }}
+								<div>{{ .Concerts | len }} concerts</div>
+								{{ end }}
+								<ul>
+									{{ range .Concerts }}
+									<li>{{ .Date }} - {{ if .Description }}{{ .Description }}{{ else }}<i>tba</i>{{ end }}</li>
+									{{ end }}
+								</ul>
+							{{ end }}
+						</div>
+					</div>
 				{{end}}
 				<div style="clear: both"></div>
 			</div>
@@ -36,13 +56,16 @@
 						return;
 					}
 
-					verzeichnis.innerText = bwv.title;
-					bwv.parentNode.insertBefore( verzeichnis, bwv.nextSibling );
-					verzeichnis.style.display = "block";
-				});
-				verzeichnis.addEventListener("click", function()
-				{
-					verzeichnis.style.display = "none";
+					if ( !bwv.classList.contains("active") )
+					{
+						let currentActive = document.querySelectorAll(".BWV.active");
+						for ( let nb of currentActive )
+						{
+							nb.classList.toggle("active");
+						}
+					}
+
+					bwv.classList.toggle("active");
 				});
 			})();
 		</script>

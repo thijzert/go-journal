@@ -99,12 +99,10 @@ div.BWVlist
 	grid-template-columns: repeat( auto-fill, minmax($bwv-width,1fr));
 	grid-gap: $bwv-margin;
 
+	margin-bottom: 1rem;
+
 	.BWV
 	{
-		font-size: $bwv-font-size;
-		line-height: $bwv-height - $bwv-margin - $bwv-border-size*2;
-		text-align: center;
-
 		box-sizing: border-box;
 		border: $bwv-border-size solid #888888;
 		background-color: #d8d8d8;
@@ -121,6 +119,41 @@ div.BWVlist
 		{
 			background-color: #E69999;
 			border-color: darken(#E69999, 20%);
+		}
+
+		.BWVNo
+		{
+			font-size: $bwv-font-size;
+			line-height: $bwv-height - $bwv-margin - $bwv-border-size*2;
+			text-align: center;
+		}
+		.info
+		{
+			display: none;
+
+			padding: 0 0.5rem 0.5rem 0.5rem;
+
+			h4
+			{
+				margin: 0.5 * ( $bwv-height - $bwv-font-size ) 0;
+			}
+			ul
+			{
+				margin: 1rem 0;
+			}
+		}
+		&.active
+		{
+			grid-column: 1 / -1;
+
+			.info
+			{
+				display: block;
+			}
+			.BWVNo
+			{
+				display: none;
+			}
 		}
 	}
 

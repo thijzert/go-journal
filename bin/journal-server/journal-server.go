@@ -77,7 +77,8 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 	e := &journal.Entry{
 		Date:     timestamp,
 		Starred:  starred,
-		Contents: body}
+		Contents: body,
+	}
 
 	err := journal.Add(*journal_file, e)
 	if err != nil {
