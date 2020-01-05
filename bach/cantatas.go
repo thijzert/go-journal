@@ -320,7 +320,7 @@ var AllCantatas [][]Comp = [][]Comp{
 		Comp{"245", "Johannes-Passion"},
 		Comp{"246", "Lukas-Passion*"},
 		Comp{"247", "Markus-Passion"},
-		Comp{"248", "Weinachtsoratorium"},
+		Comp{"248", "Weihnachtsoratorium"},
 		Comp{"248-1", "Jauchzet, frohlocket, auf, preiset die Tage"},
 		Comp{"248-2", "Und es waren Hirten in derselben Gegend"},
 		Comp{"248-3", "Herrscher des Himmels, erhöre das Lallen"},
