@@ -317,6 +317,7 @@ var AllCantatas [][]Comp = [][]Comp{
 	},
 	[]Comp{
 		Comp{"244", "Matthäus-Passion"},
+		Comp{"244b", "Matthäus-Passion (Frühfassung)"},
 		Comp{"245", "Johannes-Passion"},
 		Comp{"246", "Lukas-Passion*"},
 		Comp{"247", "Markus-Passion"},
