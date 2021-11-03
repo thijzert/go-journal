@@ -31,11 +31,16 @@ form.journal-entry
 		width: 100%;
 	}
 
+	input[type=text], select
+	{
+		font-size: 16px;
+	}
+
 	textarea
 	{
+		font-size: 18px;
 		height: 200px;
 		font-family: Georgia, serif;
-		font-size: 18px;
 	}
 
 	input[type=text], input[type=submit]
