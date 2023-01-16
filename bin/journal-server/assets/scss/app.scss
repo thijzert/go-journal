@@ -1,10 +1,9 @@
 
-$screen-width: 20rem;
+$app-width: 998px;
 
 body
 {
 	font-family: Helvetica, sans-serif;
-	// width: $screen-width;
 	padding: 0;
 	margin: 0;
 }
@@ -22,13 +21,22 @@ div.cb
 
 
 
-form.journal-entry
+main.journal-entry
 {
-	padding: 0px 10px;
+	$gutter: 10px;
+	margin: 0px $gutter;
+
+	@media (min-width: $app-width) {
+		width: $app-width - 2*$gutter;
+		margin: 0 auto;
+	}
 
 	input[type=text], textarea, input[type=submit], button
 	{
 		width: 100%;
+		&:focus-visible {
+			outline: none;
+		}
 	}
 
 	input[type=text], select
@@ -47,33 +55,43 @@ form.journal-entry
 	{
 		padding: 10px 20px;
 	}
+}
 
-	#ties
+.tiepicker
+{
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+	justify-content: center;
+
+	img
 	{
-		vertical-align: top;
-
-		img
-		{
-			width: 32px;
-		}
-		a.today img
-		{
-			width: 48px;
-		}
-		a.yesterday img
-		{
-			width: 24px;
-		}
+		width: 48px;
+	}
+	a.today img
+	{
+		width: 64px;
+	}
+	a.yesterday img
+	{
+		width: 32px;
 	}
 }
 
 
 div.notify
 {
+	$gutter: 15px;
+
 	background-color: #8FCAF0;
 	border: 2px solid #0E7EC5;
 	padding: 15px 20px;
-	margin: 15px 15px;
+	margin: 15px $gutter;
+
+	@media (min-width: $app-width) {
+		width: $app-width - 2*$gutter;
+		margin: 15px auto;
+	}
 
 	&.error
 	{
