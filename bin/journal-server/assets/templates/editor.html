@@ -19,7 +19,7 @@
 				<input type="text" id="ipt-ts" name="ts" placeholder="Timestamp" value="" />
 			</p>
 			<p>
-				<textarea id="ipt-body" name="body" spellcheck="false" autocomplete="off" placeholder="Body"></textarea>
+				<textarea autofocus  id="ipt-body" name="body" spellcheck="false" autocomplete="off" placeholder="Body"></textarea>
 			</p>
 			<p>
 				<input type="submit" value="Save" />
@@ -31,25 +31,7 @@
 				<a class="dayaftertomorrow" href="tie/dayaftertomorrow.svg"><img src="tie/dayaftertomorrow.svg" /></a>
 			</p>
 		</form>
-		<script>
-			(function() {
-				document.getElementById("ipt-body").focus();
-
-				let ipt_ts = document.getElementById("ipt-ts");
-				let zp = function(i) {
-					if ( i < 10 ) {
-						return "0" + i.toString();
-					}
-					return i.toString();
-				}
-				let upd_ts = function() {
-					let d = new Date();
-					ipt_ts.placeholder = d.getFullYear() + "-" + zp(d.getMonth() + 1) + "-" + zp(d.getDate()) + " " + zp(d.getHours()) + ":" + zp(d.getMinutes());
-				};
-				upd_ts();
-				window.setInterval(upd_ts, 5000);
-			})();
-		</script>
+		<script type="module" src="assets/js/app.js"></script>
 	</body>
 </html>
 
