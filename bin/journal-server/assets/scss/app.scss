@@ -31,56 +31,76 @@ main.journal-entry
 		margin: 0 auto;
 	}
 
-	input[type=text], textarea, input[type=submit], button
-	{
+	input[type=text], textarea, input[type=submit], button {
 		width: 100%;
 		&:focus-visible {
 			outline: none;
 		}
 	}
 
-	input[type=text], select
-	{
+	input[type=text], select {
 		font-size: 16px;
 	}
 
-	textarea
-	{
+	.auto-grow-textarea {
+		min-height: 200px;
+	}
+	textarea, .auto-grow-textarea::after {
 		font-size: 18px;
-		height: 200px;
 		font-family: Georgia, serif;
+		word-break: break-word;
+		padding: 2px;
+	}
+	input[type=text], textarea, .auto-grow-textarea::after {
+		border: 1px solid #ccc;
+	}
+	.auto-grow-textarea::after {
+		padding-bottom: 120px;
 	}
 
-	input[type=text], input[type=submit]
-	{
+	input[type=text], input[type=submit] {
 		padding: 10px 20px;
 	}
 }
 
-.tiepicker
-{
+.auto-grow-textarea {
+	display: grid;
+
+	&::after {
+		box-sizing: border-box;
+		content: attr(data-replicated-value) " ";
+		white-space: pre-wrap;
+		visibility: hidden;
+		border: 1px solid black;
+	}
+	> textarea {
+		overflow: hidden;
+		resize: none;
+	}
+	&::after, > textarea {
+		grid-area: 1/1/2/2;
+	}
+}
+
+.tiepicker {
 	display: flex;
 	flex-direction: row;
 	align-items: flex-start;
 	justify-content: center;
 
-	img
-	{
+	img {
 		width: 48px;
 	}
-	a.today img
-	{
+	a.today img {
 		width: 64px;
 	}
-	a.yesterday img
-	{
+	a.yesterday img {
 		width: 32px;
 	}
 }
 
 
-div.notify
-{
+div.notify {
 	$gutter: 15px;
 
 	background-color: #8FCAF0;
@@ -93,13 +113,11 @@ div.notify
 		margin: 15px auto;
 	}
 
-	&.error
-	{
+	&.error {
 		background-color: #F0CA8F;
 		border-color: #C57E0E;
 	}
-	a.close
-	{
+	a.close {
 		float: right;
 		margin-right: 10px;
 		font-size: 16px;
@@ -109,8 +127,7 @@ div.notify
 
 
 
-div.BWVlist
-{
+div.BWVlist {
 	$bwv-border-size: 0.0625rem;
 	$bwv-font-size: 1rem;
 	$bwv-margin: 0.125rem;
@@ -124,8 +141,7 @@ div.BWVlist
 
 	margin-bottom: 1rem;
 
-	.BWV
-	{
+	.BWV {
 		box-sizing: border-box;
 		border: $bwv-border-size solid #888888;
 		background-color: #d8d8d8;
@@ -133,55 +149,45 @@ div.BWVlist
 		min-height: $bwv-height - $bwv-margin;
 		//min-width: $bwv-width - $bwv-margin;
 
-		&.done
-		{
+		&.done {
 			background-color: #B3D580;
 			border-color: darken(#B3D580, 20%);
 		}
-		&.open
-		{
+		&.open {
 			background-color: #E69999;
 			border-color: darken(#E69999, 20%);
 		}
 
-		.BWVNo
-		{
+		.BWVNo {
 			font-size: $bwv-font-size;
 			line-height: $bwv-height - $bwv-margin - $bwv-border-size*2;
 			text-align: center;
 		}
-		.info
-		{
+		.info {
 			display: none;
 
 			padding: 0 0.5rem 0.5rem 0.5rem;
 
-			h4
-			{
+			h4 {
 				margin: 0.5 * ( $bwv-height - $bwv-font-size ) 0;
 			}
-			ul
-			{
+			ul {
 				margin: 1rem 0;
 			}
 		}
-		&.active
-		{
+		&.active {
 			grid-column: 1 / -1;
 
-			.info
-			{
+			.info {
 				display: block;
 			}
-			.BWVNo
-			{
+			.BWVNo {
 				display: none;
 			}
 		}
 	}
 
-	.Verzeichnis
-	{
+	.Verzeichnis {
 		float: none;
 		clear: both;
 		grid-column: 1 / -1;
