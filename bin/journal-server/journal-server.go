@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"flag"
 	"log"
+	"net"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -29,6 +34,12 @@ func init() {
 }
 
 func main() {
+	err := run()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+func run() error {
 	r := mux.NewRouter()
 	r.Methods("GET").Path("/journal").HandlerFunc(RequireLoggedIn(WriterHandler))
 	r.Methods("POST").Path("/journal").HandlerFunc(RequireLoggedIn(SaveHandler))
@@ -40,8 +51,45 @@ func main() {
 	p := secretbookmark.New(*secret_parameter, *password_file)
 	r.Use(p.Middleware)
 
+	defer onShutdown()
+
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	var lc net.ListenConfig
+	var err error
+	var l net.Listener
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		cancel()
+		l.Close()
+	}()
+
+	l, err = lc.Listen(ctx, "tcp", *listen)
+	if err != nil {
+		return err
+	}
 	log.Printf("Listening on '%s'; storing everything in '%s'.\n", *listen, *journal_file)
-	log.Fatal(http.ListenAndServe(*listen, r))
+
+	err = http.Serve(l, r)
+
+	if err == nil || errors.Is(err, net.ErrClosed) {
+		err = ctx.Err()
+	}
+	if err == nil || errors.Is(err, context.Canceled) {
+		err = nil
+	}
+	return err
+}
+
+func onShutdown() {
+	log.Printf("Shutting down")
+	// TODO: cleanup
+	log.Printf("Shutdown complete")
 }
 
 func WriterHandler(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +104,8 @@ func WriterHandler(w http.ResponseWriter, r *http.Request) {
 	}{
 		r.URL.Query().Get("success") != "",
 		r.URL.Query().Get("failure") != "",
-		"journal?" + getv.Encode()}
+		"journal?" + getv.Encode(),
+	}
 
 	executeTemplate(editor, homeData, w, r)
 }
