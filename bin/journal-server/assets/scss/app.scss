@@ -85,6 +85,14 @@ main
 	}
 }
 
+.indicator-tray {
+	font-size: 85%;
+	color: #888;
+
+	display: flex;
+	justify-content: space-between;
+}
+
 .tiepicker {
 	display: flex;
 	flex-direction: row;
