@@ -71,6 +71,7 @@ func run() error {
 	r.Path("/tie/{date}.svg").HandlerFunc(TieHandler)
 	r.Path("/bwv").HandlerFunc(BWVHandler)
 	r.PathPrefix("/assets/").HandlerFunc(AssetHandler)
+	r.Path("/").HandlerFunc(IndexHandler)
 
 	p := secretbookmark.New(*secret_parameter, *password_file)
 	r.Use(p.Middleware)
@@ -159,6 +160,13 @@ func autoAddDrafts(ctx context.Context) {
 			draftsMutex.Unlock()
 		}
 	}
+}
+
+func IndexHandler(w http.ResponseWriter, r *http.Request) {
+	indexData := struct {
+	}{}
+
+	executeTemplate(index, indexData, w, r)
 }
 
 func WriterHandler(w http.ResponseWriter, r *http.Request) {

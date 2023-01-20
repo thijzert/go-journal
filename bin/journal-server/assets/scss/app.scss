@@ -21,7 +21,7 @@ div.cb
 
 
 
-main.journal-entry
+main
 {
 	$gutter: 10px;
 	margin: 0px $gutter;
@@ -30,7 +30,10 @@ main.journal-entry
 		width: $app-width - 2*$gutter;
 		margin: 0 auto;
 	}
+}
 
+.journal-entry
+{
 	input[type=text], textarea, input[type=submit], button {
 		width: 100%;
 		&:focus-visible {

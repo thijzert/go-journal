@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/context"
 )
 
+var index *template.Template
 var editor *template.Template
 var bwvlist *template.Template
 var tie *template.Template
@@ -23,6 +24,15 @@ func init() {
 		log.Fatal(err)
 	}
 	editor, err = template.New("editor").Funcs(funcs).Parse(string(b))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	b, err = Asset("assets/templates/index.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+	index, err = template.New("index").Funcs(funcs).Parse(string(b))
 	if err != nil {
 		log.Fatal(err)
 	}
