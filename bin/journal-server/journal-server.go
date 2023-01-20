@@ -130,28 +130,34 @@ func onShutdown() {
 }
 
 func autoAddDrafts(ctx context.Context) {
-	for ctx.Err() == nil {
-		time.Sleep(DraftExpireInterval)
+	ticker := time.NewTicker(DraftExpireInterval)
+	defer ticker.Stop()
 
-		toDelete := []string{}
-		draftsMutex.Lock()
-		for draft_id, entry := range drafts {
-			if entry.Expires.After(time.Now()) {
-				continue
-			}
+	for {
+		select {
+		case <-ctx.Done():
+			break
+		case <-ticker.C:
+			toDelete := []string{}
+			draftsMutex.Lock()
+			for draft_id, entry := range drafts {
+				if entry.Expires.After(time.Now()) {
+					continue
+				}
 
-			log.Printf("Draft ID %s expired at %s; saving it to journal", draft_id, entry.Expires)
-			err := saveJournalEntry(entry.LastEdit, entry.Body, false)
-			if err != nil {
-				log.Printf("Error saving journal entry: %v", err)
-			} else {
-				toDelete = append(toDelete, draft_id)
+				log.Printf("Draft ID %s expired at %s; saving it to journal", draft_id, entry.Expires)
+				err := saveJournalEntry(entry.LastEdit, entry.Body, false)
+				if err != nil {
+					log.Printf("Error saving journal entry: %v", err)
+				} else {
+					toDelete = append(toDelete, draft_id)
+				}
 			}
+			for _, draft_id := range toDelete {
+				delete(drafts, draft_id)
+			}
+			draftsMutex.Unlock()
 		}
-		for _, draft_id := range toDelete {
-			delete(drafts, draft_id)
-		}
-		draftsMutex.Unlock()
 	}
 }
 
