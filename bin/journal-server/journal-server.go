@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"flag"
 	"log"
@@ -10,6 +13,8 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/thijzert/go-journal"
@@ -29,8 +34,26 @@ var (
 	secret_parameter = flag.String("secret_parameter", "apikey", "Parameter name containing the API key")
 )
 
+// DraftTimeout measures how long it takes for an unsaved draft to get added to the journal.
+const DraftTimeout time.Duration = 2 * time.Hour
+
+// DraftExpireInterval is the interval at which the application checks if any unsaved drafts have expired and should get auto-added
+const DraftExpireInterval time.Duration = 15 * time.Minute
+
+type draftEntry struct {
+	LastEdit time.Time
+	Expires  time.Time
+	Body     string
+}
+
+var (
+	draftsMutex sync.Mutex
+	drafts      map[string]draftEntry
+)
+
 func init() {
 	flag.Parse()
+	drafts = make(map[string]draftEntry)
 }
 
 func main() {
@@ -41,6 +64,7 @@ func main() {
 }
 func run() error {
 	r := mux.NewRouter()
+	r.Methods("POST").Path("/journal/draft").HandlerFunc(RequireLoggedIn(SaveDraftHandler))
 	r.Methods("GET").Path("/journal").HandlerFunc(RequireLoggedIn(WriterHandler))
 	r.Methods("POST").Path("/journal").HandlerFunc(RequireLoggedIn(SaveHandler))
 	r.Path("/tie").HandlerFunc(AllTiesHandler)
@@ -56,6 +80,8 @@ func run() error {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	go autoAddDrafts(ctx)
 
 	var lc net.ListenConfig
 	var err error
@@ -88,8 +114,45 @@ func run() error {
 
 func onShutdown() {
 	log.Printf("Shutting down")
-	// TODO: cleanup
+
+	// Save all pending drafts.
+	draftsMutex.Lock()
+	for draft_id, entry := range drafts {
+		log.Printf("Add draft ID %s to journal: last saved at %s", draft_id, entry.LastEdit)
+		err := saveJournalEntry(entry.LastEdit, entry.Body, false)
+		if err != nil {
+			log.Printf("Error saving journal entry: %v", err)
+		}
+	}
+	draftsMutex.Unlock()
+
 	log.Printf("Shutdown complete")
+}
+
+func autoAddDrafts(ctx context.Context) {
+	for ctx.Err() == nil {
+		time.Sleep(DraftExpireInterval)
+
+		toDelete := []string{}
+		draftsMutex.Lock()
+		for draft_id, entry := range drafts {
+			if entry.Expires.After(time.Now()) {
+				continue
+			}
+
+			log.Printf("Draft ID %s expired at %s; saving it to journal", draft_id, entry.Expires)
+			err := saveJournalEntry(entry.LastEdit, entry.Body, false)
+			if err != nil {
+				log.Printf("Error saving journal entry: %v", err)
+			} else {
+				toDelete = append(toDelete, draft_id)
+			}
+		}
+		for _, draft_id := range toDelete {
+			delete(drafts, draft_id)
+		}
+		draftsMutex.Unlock()
+	}
 }
 
 func WriterHandler(w http.ResponseWriter, r *http.Request) {
@@ -110,6 +173,16 @@ func WriterHandler(w http.ResponseWriter, r *http.Request) {
 	executeTemplate(editor, homeData, w, r)
 }
 
+func saveJournalEntry(timestamp time.Time, contents string, starred bool) error {
+	e := &journal.Entry{
+		Date:     timestamp,
+		Starred:  starred,
+		Contents: contents,
+	}
+
+	return journal.Add(*journal_file, e)
+}
+
 func SaveHandler(w http.ResponseWriter, r *http.Request) {
 	timestamp := journal.SmartTime(r.PostFormValue("ts"))
 	starred := r.PostFormValue("star") != ""
@@ -121,16 +194,17 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 		body = body[0 : len(body)-1]
 	}
 
-	e := &journal.Entry{
-		Date:     timestamp,
-		Starred:  starred,
-		Contents: body,
-	}
-
-	err := journal.Add(*journal_file, e)
+	err := saveJournalEntry(timestamp, body, starred)
 	if err != nil {
 		errorHandler(err, w, r)
 		return
+	}
+
+	if draft_id := r.PostFormValue("draft_id"); draft_id != "" {
+		// We're saving this post - no need to keep the draft around
+		draftsMutex.Lock()
+		delete(drafts, draft_id)
+		draftsMutex.Unlock()
 	}
 
 	getv := r.URL.Query()
@@ -139,4 +213,41 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Location", "journal?"+getv.Encode())
 	w.WriteHeader(http.StatusFound)
+}
+
+func SaveDraftHandler(w http.ResponseWriter, r *http.Request) {
+	draft_id := r.PostFormValue("draft_id")
+	if len(draft_id) != 12 {
+		buf := make([]byte, 6)
+		_, err := rand.Read(buf)
+		if err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte("Internal Server Error"))
+		}
+		draft_id = hex.EncodeToString(buf)
+	}
+
+	post_body := r.PostFormValue("body")
+
+	draftsMutex.Lock()
+	defer draftsMutex.Unlock()
+	if post_body == "" {
+		delete(drafts, draft_id)
+	} else {
+		drafts[draft_id] = draftEntry{
+			LastEdit: time.Now(),
+			Expires:  time.Now().Add(DraftTimeout),
+			Body:     post_body,
+		}
+	}
+
+	rv := struct {
+		OK      int    `json:"ok"`
+		Message string `json:"_"`
+		DraftID string `json:"draft_id"`
+	}{1, "Draft saved", draft_id}
+
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	enc.Encode(rv)
 }
