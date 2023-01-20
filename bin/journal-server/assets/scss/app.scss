@@ -91,6 +91,11 @@ main
 
 	display: flex;
 	justify-content: space-between;
+
+	.wordcount.-success {
+		font-weight: bold;
+		color: #2bd125;
+	}
 }
 
 .tiepicker {
