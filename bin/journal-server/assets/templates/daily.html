@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Journal</title>
+		<title>Daily pages</title>
 		<link rel="stylesheet" href="assets/css/app.css" />
 		<meta name="viewport" content="width=320" />
 		<meta http-equiv="Content-type" content="text/html; charset=UTF-8" />
@@ -17,9 +17,6 @@
 		<main class="journal-entry">
 			<form method="post" action="{{.Callback}}" accept-charset="UTF-8" class="-js-autosave-draft">
 				<p>
-					<input type="text" id="ipt-ts" name="ts" placeholder="Timestamp" value="" />
-				</p>
-				<p>
 					<div class="auto-grow-textarea">
 						<textarea autofocus  id="ipt-body" name="body" spellcheck="false" autocomplete="off" placeholder="Body"></textarea>
 					</div>
@@ -31,6 +28,7 @@
 			</form>
 			<section class="indicator-tray">
 				<aside class="save-status"></aside>
+				<aside class="wordcount"></aside>
 			</section>
 		</main>
 		<script type="module" src="assets/js/app.js"></script>

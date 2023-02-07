@@ -11,6 +11,7 @@ import (
 
 var index *template.Template
 var editor *template.Template
+var daily *template.Template
 var bwvlist *template.Template
 var tie *template.Template
 
@@ -24,6 +25,15 @@ func init() {
 		log.Fatal(err)
 	}
 	editor, err = template.New("editor").Funcs(funcs).Parse(string(b))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	b, err = Asset("assets/templates/daily.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+	daily, err = template.New("daily").Funcs(funcs).Parse(string(b))
 	if err != nil {
 		log.Fatal(err)
 	}

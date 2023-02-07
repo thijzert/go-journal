@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -20,12 +21,6 @@ import (
 	"github.com/thijzert/go-journal"
 	"github.com/thijzert/go-journal/bin/journal-server/secretbookmark"
 )
-
-// This package requires go-bindata (github.com/jteeuwen/go-bindata) to build
-//go:generate go-bindata -o assets.go -pkg main assets/...
-// For development purposes, this command is much more convenient:
-//
-//     go-bindata -debug -o assets.go -pkg main assets/...
 
 var (
 	listen           = flag.String("listen", ":8848", "Listen on this host/port")
@@ -67,6 +62,8 @@ func run() error {
 	r.Methods("POST").Path("/journal/draft").HandlerFunc(RequireLoggedIn(SaveDraftHandler))
 	r.Methods("GET").Path("/journal").HandlerFunc(RequireLoggedIn(WriterHandler))
 	r.Methods("POST").Path("/journal").HandlerFunc(RequireLoggedIn(SaveHandler))
+	r.Methods("GET").Path("/daily").HandlerFunc(RequireLoggedIn(DailyHandler))
+	r.Methods("POST").Path("/daily").HandlerFunc(RequireLoggedIn(SaveHandler))
 	r.Path("/tie").HandlerFunc(AllTiesHandler)
 	r.Path("/tie/{date}.svg").HandlerFunc(TieHandler)
 	r.Path("/bwv").HandlerFunc(BWVHandler)
@@ -187,6 +184,24 @@ func WriterHandler(w http.ResponseWriter, r *http.Request) {
 	executeTemplate(editor, homeData, w, r)
 }
 
+func DailyHandler(w http.ResponseWriter, r *http.Request) {
+	getv := r.URL.Query()
+
+	getv.Del("success")
+	getv.Del("failure")
+
+	pageData := struct {
+		Success, Failure bool
+		Callback         string
+	}{
+		r.URL.Query().Get("success") != "",
+		r.URL.Query().Get("failure") != "",
+		"daily?" + getv.Encode(),
+	}
+
+	executeTemplate(daily, pageData, w, r)
+}
+
 func saveJournalEntry(timestamp time.Time, contents string, starred bool) error {
 	e := &journal.Entry{
 		Date:     timestamp,
@@ -225,7 +240,7 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 	getv.Del("failure")
 	getv.Set("success", "1")
 
-	w.Header().Set("Location", "journal?"+getv.Encode())
+	w.Header().Set("Location", path.Base(r.URL.Path)+"?"+getv.Encode())
 	w.WriteHeader(http.StatusFound)
 }
 
