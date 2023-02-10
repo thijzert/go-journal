@@ -52,7 +52,7 @@
 		for ( let f of file_ipt.files ) {
 			files.push(f);
 		}
-		file_ipt.files = null;
+		file_ipt.value = null;
 
 		let headstart = 0;
 		for ( let f of files ) {
