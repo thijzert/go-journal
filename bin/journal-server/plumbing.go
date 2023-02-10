@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"html/template"
 	"log"
@@ -116,4 +117,23 @@ func errorHandler(e error, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(400)
 	w.Write([]byte("TODO: error handling\n"))
 	w.Write([]byte(e.Error()))
+}
+
+func writeJSON(w http.ResponseWriter, val any) {
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	enc.Encode(val)
+}
+
+func writeJSONError(w http.ResponseWriter, statusCode int, errorCode int, message string) {
+	val := struct {
+		Error   int    `json:"error"`
+		Message string `json:"_"`
+		OK      int    `json:"ok"`
+	}{errorCode, message, 0}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	enc := json.NewEncoder(w)
+	enc.Encode(val)
 }

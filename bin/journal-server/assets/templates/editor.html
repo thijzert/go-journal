@@ -28,6 +28,14 @@
 					<input type="hidden" id="ipt-draft-id" name="draft_id" />
 					<input type="submit" value="Save" />
 				</p>
+				{{if .CanAttachFiles}}
+					<ul id="list-of-attached-files"></ul>
+					<p>
+						<p>
+							<label>Attach a file: <input type="file" multiple id="ipt-file-upload" placeholder="Attach files..." /></label>
+						</p>
+					</p>
+				{{end}}
 			</form>
 			<section class="indicator-tray">
 				<aside class="save-status"></aside>
