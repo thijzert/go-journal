@@ -1,4 +1,5 @@
 (() => {
+	const body_ipt = document.getElementById("ipt-body");
 	const file_ipt = document.getElementById("ipt-file-upload");
 	const file_list = document.getElementById("list-of-attached-files");
 
@@ -11,7 +12,6 @@
 	let attachments = {};
 
 	const upload_buf = async (hash) => {
-		console.log(hash, attachments[hash]);
 		const file = attachments[hash];
 		if ( !file ) {
 			return;
@@ -54,6 +54,7 @@
 		}
 		file_ipt.value = null;
 
+		let insert_text = "";
 		let headstart = 0;
 		for ( let f of files ) {
 			let buf = await f.arrayBuffer();
@@ -62,6 +63,12 @@
 
 			if ( hash in attachments ) {
 				continue;
+			}
+
+			if ( f.type.slice(0,6) == "image/" ) {
+				insert_text += `\n{{./${hash}}}`
+			} else {
+				insert_text += `\n[[./${hash}|${f.name}]]`
 			}
 
 			let li = document.createElement("li");
@@ -82,6 +89,11 @@
 			attachments[hash] = {hash, buf, pr, li, offset};
 			window.setTimeout(() => { upload_buf(hash); }, headstart);
 			headstart += 200;
+		}
+
+		console.log(body_ipt)
+		if ( insert_text != "" && body_ipt ) {
+			body_ipt.value = body_ipt.value.slice(0,body_ipt.selectedIndex) + insert_text + body_ipt.value.slice(0,body_ipt.selectedIndex);
 		}
 	})
 })();

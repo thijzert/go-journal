@@ -368,6 +368,10 @@ func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, 400, 400, "Invalid attachment hash")
 		return
 	}
+	if _, err := hex.DecodeString(att_hash); err != nil {
+		writeJSONError(w, 400, 400, "Invalid attachment hash")
+		return
+	}
 
 	chunk, err := io.ReadAll(r.Body)
 	if err != nil {
