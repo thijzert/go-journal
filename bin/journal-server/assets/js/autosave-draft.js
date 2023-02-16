@@ -6,6 +6,7 @@ const AUTOSAVE_INTERVAL_MS = 2500;
 	}
 
 	const ipt_body = editform.querySelector("textarea");
+	const ipt_project = editform.querySelector("#ipt-project") || document.createElement("input");
 	const ipt_draft_id = editform.querySelector("input[type=hidden][name=draft_id]");
 	if ( !ipt_body || !ipt_draft_id ) {
 		return;
@@ -34,6 +35,7 @@ const AUTOSAVE_INTERVAL_MS = 2500;
 			let pb = new FormData();
 			pb.set("draft_id", draft_id);
 			pb.set("body", ipt_body.value);
+			pb.set("project", ipt_project.value);
 			let draft_emptied = (ipt_body.value.trim() === '');
 			let q = await fetch(draft_url, {method: "POST", body: pb});
 			q = await q.json();
@@ -58,14 +60,16 @@ const AUTOSAVE_INTERVAL_MS = 2500;
 	};
 
 	let current_body = ipt_body.value;
+	let current_project = ipt_project.value;
 	window.setInterval(async () => {
-		if ( ipt_body.value == current_body ) {
+		if ( ipt_body.value == current_body && ipt_project.value == current_project ) {
 			return;
 		}
 
 		try {
-		await save_draft();
-		current_body = ipt_body.value;
+			await save_draft();
+			current_body = ipt_body.value;
+			current_project = ipt_project.value;
 		} catch ( e ) {
 			console.error("automatic save failed")
 		}

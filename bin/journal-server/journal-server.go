@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -29,6 +30,7 @@ var (
 	password_file    = flag.String("password_file", ".htpasswd", "File containing passwords")
 	secret_parameter = flag.String("secret_parameter", "apikey", "Parameter name containing the API key")
 	attachments_dir  = flag.String("attachments_dir", "", "Directory for storing attached files")
+	projects_dir     = flag.String("projects_dir", "", "Directory with project log files")
 )
 
 // DraftTimeout measures how long it takes for an unsaved draft to get added to the journal.
@@ -41,6 +43,7 @@ type draftEntry struct {
 	LastEdit time.Time
 	Expires  time.Time
 	Body     string
+	Project  string
 }
 
 var (
@@ -138,7 +141,7 @@ func onShutdown() {
 	draftsMutex.Lock()
 	for draft_id, entry := range drafts {
 		log.Printf("Add draft ID %s to journal: last saved at %s", draft_id, entry.LastEdit)
-		err := saveJournalEntry(entry.LastEdit, entry.Body, false)
+		err := saveJournalEntry(entry.LastEdit, entry.Body, entry.Project, false)
 		if err != nil {
 			log.Printf("Error saving journal entry: %v", err)
 		}
@@ -165,7 +168,7 @@ func autoAddDrafts(ctx context.Context) {
 				}
 
 				log.Printf("Draft ID %s expired at %s; saving it to journal", draft_id, entry.Expires)
-				err := saveJournalEntry(entry.LastEdit, entry.Body, false)
+				err := saveJournalEntry(entry.LastEdit, entry.Body, entry.Project, false)
 				if err != nil {
 					log.Printf("Error saving journal entry: %v", err)
 				} else {
@@ -213,21 +216,53 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	executeTemplate(index, indexData, w, r)
 }
 
+func listProjects(ctx context.Context) ([]string, error) {
+	if *projects_dir == "" {
+		return nil, nil
+	}
+
+	d, err := os.Open(*projects_dir)
+	if err != nil {
+		return nil, err
+	}
+
+	fis, err := d.ReadDir(-1)
+	if err != nil {
+		return nil, err
+	}
+
+	var rv []string
+	for _, fi := range fis {
+		if fi.IsDir() {
+			continue
+		}
+		rv = append(rv, fi.Name())
+	}
+
+	sort.Strings(rv)
+
+	return rv, nil
+}
+
 func WriterHandler(w http.ResponseWriter, r *http.Request) {
 	getv := r.URL.Query()
 
 	getv.Del("success")
 	getv.Del("failure")
 
+	projects, _ := listProjects(r.Context())
+
 	pageData := struct {
 		Success, Failure bool
 		Callback         string
 		CanAttachFiles   bool
+		Projects         []string
 	}{
 		r.URL.Query().Get("success") != "",
 		r.URL.Query().Get("failure") != "",
 		"journal?" + getv.Encode(),
 		*attachments_dir != "",
+		projects,
 	}
 
 	executeTemplate(editor, pageData, w, r)
@@ -251,7 +286,19 @@ func DailyHandler(w http.ResponseWriter, r *http.Request) {
 	executeTemplate(daily, pageData, w, r)
 }
 
-func saveJournalEntry(timestamp time.Time, contents string, starred bool) error {
+func saveJournalEntry(timestamp time.Time, contents string, project string, starred bool) error {
+	if project != "" && *projects_dir != "" {
+		prf := path.Join(*projects_dir, strings.Replace(strings.Replace(project, "/", "", -1), "\\", "", -1))
+		//log.Printf("Also adding post to project %s → %s", project, prf)
+		if f, err := os.OpenFile(prf, os.O_APPEND|os.O_WRONLY, 0600); err == nil {
+			fmt.Fprintf(f, "\n=== %s ===\n%s\n", timestamp.Format("2006-01-02"), contents)
+			f.Close()
+		}
+	}
+	if project != "" {
+		contents = "@project " + formatProjectName(project) + "\n" + contents
+	}
+
 	e := &journal.Entry{
 		Date:     timestamp,
 		Starred:  starred,
@@ -265,6 +312,7 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 	timestamp := journal.SmartTime(r.PostFormValue("ts"))
 	starred := r.PostFormValue("star") != ""
 	body := r.PostFormValue("body")
+	project := r.PostFormValue("project")
 
 	// Remove carriage returns entirely. Why? Because it fits my use case, and because sod MS-DOS.
 	body = strings.Replace(body, "\r", "", -1)
@@ -298,7 +346,7 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err := saveJournalEntry(timestamp, body, starred)
+	err := saveJournalEntry(timestamp, body, project, starred)
 	if err != nil {
 		errorHandler(err, w, r)
 		return
@@ -337,6 +385,7 @@ func SaveDraftHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	post_body := r.PostFormValue("body")
+	project := r.PostFormValue("project")
 
 	draftsMutex.Lock()
 	defer draftsMutex.Unlock()
@@ -347,6 +396,7 @@ func SaveDraftHandler(w http.ResponseWriter, r *http.Request) {
 			LastEdit: time.Now(),
 			Expires:  time.Now().Add(DraftTimeout),
 			Body:     post_body,
+			Project:  project,
 		}
 	}
 
