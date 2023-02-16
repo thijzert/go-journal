@@ -4,9 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -27,6 +28,7 @@ var (
 	journal_file     = flag.String("journal_file", "journal.txt", "Use this file for Journal storage")
 	password_file    = flag.String("password_file", ".htpasswd", "File containing passwords")
 	secret_parameter = flag.String("secret_parameter", "apikey", "Parameter name containing the API key")
+	attachments_dir  = flag.String("attachments_dir", "", "Directory for storing attached files")
 )
 
 // DraftTimeout measures how long it takes for an unsaved draft to get added to the journal.
@@ -46,9 +48,26 @@ var (
 	drafts      map[string]draftEntry
 )
 
+// AttachmentTimeout measures how long an attachment should remain cached
+const AttachmentTimeout time.Duration = 30 * time.Minute
+
+// AttachmentTimeout measures how long an attachment should remain cached
+const AttachmentPurgeInterval time.Duration = 5 * time.Minute
+
+type attachmentEntry struct {
+	PurgeAt time.Time
+	Buf     []byte
+}
+
+var (
+	attachmentMutex sync.Mutex
+	attachments     map[string]attachmentEntry
+)
+
 func init() {
 	flag.Parse()
 	drafts = make(map[string]draftEntry)
+	attachments = make(map[string]attachmentEntry)
 }
 
 func main() {
@@ -59,6 +78,7 @@ func main() {
 }
 func run() error {
 	r := mux.NewRouter()
+	r.Methods("POST").Path("/journal/attachment").HandlerFunc(RequireLoggedIn(FileUploadHandler))
 	r.Methods("POST").Path("/journal/draft").HandlerFunc(RequireLoggedIn(SaveDraftHandler))
 	r.Methods("GET").Path("/journal").HandlerFunc(RequireLoggedIn(WriterHandler))
 	r.Methods("POST").Path("/journal").HandlerFunc(RequireLoggedIn(SaveHandler))
@@ -80,6 +100,7 @@ func run() error {
 	defer cancel()
 
 	go autoAddDrafts(ctx)
+	go autoPurgeAttachments(ctx)
 
 	var lc net.ListenConfig
 	var err error
@@ -159,6 +180,32 @@ func autoAddDrafts(ctx context.Context) {
 	}
 }
 
+func autoPurgeAttachments(ctx context.Context) {
+	ticker := time.NewTicker(AttachmentPurgeInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			break
+		case <-ticker.C:
+			toDelete := []string{}
+			attachmentMutex.Lock()
+			for att_hash, entry := range attachments {
+				if entry.PurgeAt.After(time.Now()) {
+					continue
+				}
+				toDelete = append(toDelete, att_hash)
+			}
+			for _, att_hash := range toDelete {
+				log.Printf("Deleting attachment with hash '%s'", att_hash)
+				delete(attachments, att_hash)
+			}
+			attachmentMutex.Unlock()
+		}
+	}
+}
+
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	indexData := struct {
 	}{}
@@ -172,16 +219,18 @@ func WriterHandler(w http.ResponseWriter, r *http.Request) {
 	getv.Del("success")
 	getv.Del("failure")
 
-	homeData := struct {
+	pageData := struct {
 		Success, Failure bool
 		Callback         string
+		CanAttachFiles   bool
 	}{
 		r.URL.Query().Get("success") != "",
 		r.URL.Query().Get("failure") != "",
 		"journal?" + getv.Encode(),
+		*attachments_dir != "",
 	}
 
-	executeTemplate(editor, homeData, w, r)
+	executeTemplate(editor, pageData, w, r)
 }
 
 func DailyHandler(w http.ResponseWriter, r *http.Request) {
@@ -223,6 +272,32 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 		body = body[0 : len(body)-1]
 	}
 
+	var nonFatalError error
+
+	if *attachments_dir != "" {
+		attachmentMutex.Lock()
+		defer attachmentMutex.Unlock()
+
+		for att_hash, entry := range attachments {
+			if r.PostFormValue("attachment-"+att_hash) == "" {
+				continue
+			}
+
+			delete(attachments, att_hash)
+
+			// Link the attachment in the post body
+			body = fmt.Sprintf("%s\n@attachment %s", body, att_hash)
+
+			f, err := os.Create(path.Join(*attachments_dir, att_hash))
+			if err != nil {
+				nonFatalError = err
+				continue
+			}
+			f.Write(entry.Buf)
+			f.Close()
+		}
+	}
+
 	err := saveJournalEntry(timestamp, body, starred)
 	if err != nil {
 		errorHandler(err, w, r)
@@ -238,7 +313,12 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 
 	getv := r.URL.Query()
 	getv.Del("failure")
-	getv.Set("success", "1")
+	getv.Del("success")
+	if nonFatalError != nil {
+		getv.Set("failure", "1")
+	} else {
+		getv.Set("success", "1")
+	}
 
 	w.Header().Set("Location", path.Base(r.URL.Path)+"?"+getv.Encode())
 	w.WriteHeader(http.StatusFound)
@@ -270,13 +350,49 @@ func SaveDraftHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	rv := struct {
+	writeJSON(w, struct {
 		OK      int    `json:"ok"`
 		Message string `json:"_"`
 		DraftID string `json:"draft_id"`
-	}{1, "Draft saved", draft_id}
+	}{1, "Draft saved", draft_id})
+}
 
-	w.Header().Set("Content-Type", "application/json")
-	enc := json.NewEncoder(w)
-	enc.Encode(rv)
+func FileUploadHandler(w http.ResponseWriter, r *http.Request) {
+	if *attachments_dir == "" {
+		writeJSONError(w, 503, 503, "This feature is not available")
+		return
+	}
+
+	att_hash := r.URL.Query().Get("att_hash")
+	if len(att_hash) != 64 {
+		writeJSONError(w, 400, 400, "Invalid attachment hash")
+		return
+	}
+	if _, err := hex.DecodeString(att_hash); err != nil {
+		writeJSONError(w, 400, 400, "Invalid attachment hash")
+		return
+	}
+
+	chunk, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error reading chunk: %v")
+		writeJSONError(w, 400, 400, "Error reading chunk")
+		return
+	}
+
+	attachmentMutex.Lock()
+
+	e := attachments[att_hash]
+	e.PurgeAt = time.Now().Add(AttachmentTimeout)
+	e.Buf = append(e.Buf, chunk...)
+	file_length := len(e.Buf)
+	attachments[att_hash] = e
+
+	attachmentMutex.Unlock()
+
+	writeJSON(w, struct {
+		OK      int    `json:"ok"`
+		Message string `json:"_"`
+		Length  int    `json:"file_length"`
+	}{1, "Chunk saved", file_length})
 }
