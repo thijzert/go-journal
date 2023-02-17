@@ -36,6 +36,13 @@ const AUTOSAVE_INTERVAL_MS = 2500;
 			pb.set("draft_id", draft_id);
 			pb.set("body", ipt_body.value);
 			pb.set("project", ipt_project.value);
+
+			document.querySelectorAll("#list-of-attached-files li input[type=checkbox]").forEach((x) => {
+				if ( x.checked ) {
+					pb.set(x.name, "on");
+				}
+			})
+
 			let draft_emptied = (ipt_body.value.trim() === '');
 			let q = await fetch(draft_url, {method: "POST", body: pb});
 			q = await q.json();
@@ -43,6 +50,7 @@ const AUTOSAVE_INTERVAL_MS = 2500;
 				save_status.innerText = "Draft saved";
 				save_time.innerText = `Last saved at ${(new Date()).toTimeString().slice(0,5)}`;
 				draft_id = q.draft_id;
+				ipt_draft_id.value = draft_id;
 
 				if ( draft_emptied ) {
 					save_status.innerText = "Draft deleted";
