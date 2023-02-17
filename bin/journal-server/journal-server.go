@@ -289,7 +289,6 @@ func DailyHandler(w http.ResponseWriter, r *http.Request) {
 func saveJournalEntry(timestamp time.Time, contents string, project string, starred bool) error {
 	if project != "" && *projects_dir != "" {
 		prf := path.Join(*projects_dir, strings.Replace(strings.Replace(project, "/", "", -1), "\\", "", -1))
-		//log.Printf("Also adding post to project %s → %s", project, prf)
 		if f, err := os.OpenFile(prf, os.O_APPEND|os.O_WRONLY, 0600); err == nil {
 			fmt.Fprintf(f, "\n=== %s ===\n%s\n", timestamp.Format("2006-01-02"), contents)
 			f.Close()
