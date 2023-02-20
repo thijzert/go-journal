@@ -17,13 +17,17 @@ var daily *template.Template
 var bwvlist *template.Template
 var tie *template.Template
 
-func formatProjectName(name string) string {
+func stripProjectSuffix(name string) string {
 	if len(name) > 4 && name[len(name)-4:] == ".txt" {
 		name = name[:len(name)-5]
 	} else if len(name) > 5 && name[len(name)-5:] == ".wiki" {
 		name = name[:len(name)-5]
 	}
+	return name
+}
 
+func formatProjectName(name string) string {
+	name = stripProjectSuffix(name)
 	name = strings.Replace(name, "_", " ", -1)
 
 	return name

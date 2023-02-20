@@ -323,10 +323,13 @@ func readAttachmentHashes(r *http.Request) []string {
 }
 
 func saveJournalEntry(timestamp time.Time, contents string, project string, attachmentIDs []string, starred bool) error {
+	project_attachments_dir := ""
 	var nonFatalError error
 	if project != "" && *projects_dir != "" {
-		prf := path.Join(*projects_dir, strings.Replace(strings.Replace(project, "/", "", -1), "\\", "", -1))
+		proj := strings.Replace(strings.Replace(project, "/", "", -1), "\\", "", -1)
+		prf := path.Join(*projects_dir, proj)
 		if f, err := os.OpenFile(prf, os.O_APPEND|os.O_WRONLY, 0600); err == nil {
+			project_attachments_dir = path.Join(*projects_dir, stripProjectSuffix(proj))
 			fmt.Fprintf(f, "\n=== %s ===\n%s\n", timestamp.Format("2006-01-02"), contents)
 			f.Close()
 		}
@@ -353,6 +356,17 @@ func saveJournalEntry(timestamp time.Time, contents string, project string, atta
 			}
 			f.Write(entry.Buf)
 			f.Close()
+
+			if project_attachments_dir != "" {
+				os.MkdirAll(project_attachments_dir, 0755)
+				f, err := os.Create(path.Join(project_attachments_dir, att_hash))
+				if err != nil {
+					nonFatalError = err
+					continue
+				}
+				f.Write(entry.Buf)
+				f.Close()
+			}
 		}
 	}
 
