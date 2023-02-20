@@ -28,6 +28,16 @@
 					<input type="hidden" id="ipt-draft-id" name="draft_id" />
 					<input type="submit" value="Save" />
 				</p>
+				{{if .Projects}}
+				<p>
+					<select type="text" id="ipt-project" name="project" placeholder="Project">
+						<option value="">Tag project...</option>
+						{{range .Projects}}
+							<option value="{{.}}">{{. | ProjectName}}</option>
+						{{end}}
+					</select>
+				</p>
+				{{end}}
 				{{if .CanAttachFiles}}
 					<ul id="list-of-attached-files"></ul>
 					<p>

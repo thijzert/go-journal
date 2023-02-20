@@ -34,7 +34,7 @@ main
 
 .journal-entry
 {
-	input[type=text], textarea, input[type=submit], button {
+	input[type=text], textarea, input[type=submit], button, select {
 		width: 100%;
 		&:focus-visible {
 			outline: none;
@@ -61,7 +61,7 @@ main
 		padding-bottom: 120px;
 	}
 
-	input[type=text], input[type=submit] {
+	input[type=text], input[type=submit], select {
 		padding: 10px 20px;
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -29,6 +30,7 @@ var (
 	password_file    = flag.String("password_file", ".htpasswd", "File containing passwords")
 	secret_parameter = flag.String("secret_parameter", "apikey", "Parameter name containing the API key")
 	attachments_dir  = flag.String("attachments_dir", "", "Directory for storing attached files")
+	projects_dir     = flag.String("projects_dir", "", "Directory with project log files")
 )
 
 // DraftTimeout measures how long it takes for an unsaved draft to get added to the journal.
@@ -38,9 +40,11 @@ const DraftTimeout time.Duration = 2 * time.Hour
 const DraftExpireInterval time.Duration = 15 * time.Minute
 
 type draftEntry struct {
-	LastEdit time.Time
-	Expires  time.Time
-	Body     string
+	LastEdit      time.Time
+	Expires       time.Time
+	Body          string
+	Project       string
+	AttachmentIDs []string
 }
 
 var (
@@ -138,7 +142,7 @@ func onShutdown() {
 	draftsMutex.Lock()
 	for draft_id, entry := range drafts {
 		log.Printf("Add draft ID %s to journal: last saved at %s", draft_id, entry.LastEdit)
-		err := saveJournalEntry(entry.LastEdit, entry.Body, false)
+		err := saveJournalEntry(entry.LastEdit, entry.Body, entry.Project, entry.AttachmentIDs, false)
 		if err != nil {
 			log.Printf("Error saving journal entry: %v", err)
 		}
@@ -165,7 +169,7 @@ func autoAddDrafts(ctx context.Context) {
 				}
 
 				log.Printf("Draft ID %s expired at %s; saving it to journal", draft_id, entry.Expires)
-				err := saveJournalEntry(entry.LastEdit, entry.Body, false)
+				err := saveJournalEntry(entry.LastEdit, entry.Body, entry.Project, entry.AttachmentIDs, false)
 				if err != nil {
 					log.Printf("Error saving journal entry: %v", err)
 				} else {
@@ -189,10 +193,24 @@ func autoPurgeAttachments(ctx context.Context) {
 		case <-ctx.Done():
 			break
 		case <-ticker.C:
+			// Check if attachments are part of a draft post.
+			// We don't delete those if the draft is still active
+			dontDelete := make(map[string]bool)
+			draftsMutex.Lock()
+			for _, entry := range drafts {
+				for _, att_hash := range entry.AttachmentIDs {
+					dontDelete[att_hash] = true
+				}
+			}
+			draftsMutex.Unlock()
+
 			toDelete := []string{}
 			attachmentMutex.Lock()
 			for att_hash, entry := range attachments {
 				if entry.PurgeAt.After(time.Now()) {
+					continue
+				}
+				if dontDelete[att_hash] {
 					continue
 				}
 				toDelete = append(toDelete, att_hash)
@@ -213,21 +231,53 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	executeTemplate(index, indexData, w, r)
 }
 
+func listProjects(ctx context.Context) ([]string, error) {
+	if *projects_dir == "" {
+		return nil, nil
+	}
+
+	d, err := os.Open(*projects_dir)
+	if err != nil {
+		return nil, err
+	}
+
+	fis, err := d.ReadDir(-1)
+	if err != nil {
+		return nil, err
+	}
+
+	var rv []string
+	for _, fi := range fis {
+		if fi.IsDir() {
+			continue
+		}
+		rv = append(rv, fi.Name())
+	}
+
+	sort.Strings(rv)
+
+	return rv, nil
+}
+
 func WriterHandler(w http.ResponseWriter, r *http.Request) {
 	getv := r.URL.Query()
 
 	getv.Del("success")
 	getv.Del("failure")
 
+	projects, _ := listProjects(r.Context())
+
 	pageData := struct {
 		Success, Failure bool
 		Callback         string
 		CanAttachFiles   bool
+		Projects         []string
 	}{
 		r.URL.Query().Get("success") != "",
 		r.URL.Query().Get("failure") != "",
 		"journal?" + getv.Encode(),
 		*attachments_dir != "",
+		projects,
 	}
 
 	executeTemplate(editor, pageData, w, r)
@@ -251,42 +301,53 @@ func DailyHandler(w http.ResponseWriter, r *http.Request) {
 	executeTemplate(daily, pageData, w, r)
 }
 
-func saveJournalEntry(timestamp time.Time, contents string, starred bool) error {
-	e := &journal.Entry{
-		Date:     timestamp,
-		Starred:  starred,
-		Contents: contents,
-	}
+func readAttachmentHashes(r *http.Request) []string {
+	var rv []string
+	for k, vs := range r.PostForm {
+		if len(k) != (64+11) || k[:11] != "attachment-" {
+			continue
+		}
+		att_hash := k[11:]
+		if _, err := hex.DecodeString(att_hash); err != nil {
+			continue
+		}
 
-	return journal.Add(*journal_file, e)
+		for _, v := range vs {
+			if v != "" {
+				rv = append(rv, att_hash)
+				break
+			}
+		}
+	}
+	return rv
 }
 
-func SaveHandler(w http.ResponseWriter, r *http.Request) {
-	timestamp := journal.SmartTime(r.PostFormValue("ts"))
-	starred := r.PostFormValue("star") != ""
-	body := r.PostFormValue("body")
-
-	// Remove carriage returns entirely. Why? Because it fits my use case, and because sod MS-DOS.
-	body = strings.Replace(body, "\r", "", -1)
-	for len(body) > 0 && body[len(body)-1] == '\n' {
-		body = body[0 : len(body)-1]
-	}
-
+func saveJournalEntry(timestamp time.Time, contents string, project string, attachmentIDs []string, starred bool) error {
+	project_attachments_dir := ""
 	var nonFatalError error
+	if project != "" && *projects_dir != "" {
+		proj := strings.Replace(strings.Replace(project, "/", "", -1), "\\", "", -1)
+		prf := path.Join(*projects_dir, proj)
+		if f, err := os.OpenFile(prf, os.O_APPEND|os.O_WRONLY, 0600); err == nil {
+			project_attachments_dir = path.Join(*projects_dir, stripProjectSuffix(proj))
+			fmt.Fprintf(f, "\n=== %s ===\n%s\n", timestamp.Format("2006-01-02"), contents)
+			f.Close()
+		}
+	}
+	if project != "" {
+		contents = "@project " + formatProjectName(project) + "\n" + contents
+	}
 
 	if *attachments_dir != "" {
 		attachmentMutex.Lock()
 		defer attachmentMutex.Unlock()
 
-		for att_hash, entry := range attachments {
-			if r.PostFormValue("attachment-"+att_hash) == "" {
-				continue
-			}
-
+		for _, att_hash := range attachmentIDs {
+			entry := attachments[att_hash]
 			delete(attachments, att_hash)
 
 			// Link the attachment in the post body
-			body = fmt.Sprintf("%s\n@attachment %s", body, att_hash)
+			contents = fmt.Sprintf("%s\n@attachment %s", contents, att_hash)
 
 			f, err := os.Create(path.Join(*attachments_dir, att_hash))
 			if err != nil {
@@ -295,29 +356,62 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			f.Write(entry.Buf)
 			f.Close()
+
+			if project_attachments_dir != "" {
+				os.MkdirAll(project_attachments_dir, 0755)
+				f, err := os.Create(path.Join(project_attachments_dir, att_hash))
+				if err != nil {
+					nonFatalError = err
+					continue
+				}
+				f.Write(entry.Buf)
+				f.Close()
+			}
 		}
 	}
 
-	err := saveJournalEntry(timestamp, body, starred)
-	if err != nil {
-		errorHandler(err, w, r)
-		return
+	e := &journal.Entry{
+		Date:     timestamp,
+		Starred:  starred,
+		Contents: contents,
 	}
 
-	if draft_id := r.PostFormValue("draft_id"); draft_id != "" {
-		// We're saving this post - no need to keep the draft around
-		draftsMutex.Lock()
-		delete(drafts, draft_id)
-		draftsMutex.Unlock()
+	err := journal.Add(*journal_file, e)
+	if err != nil {
+		return err
+	}
+	return nonFatalError
+}
+
+func SaveHandler(w http.ResponseWriter, r *http.Request) {
+	timestamp := journal.SmartTime(r.PostFormValue("ts"))
+	starred := r.PostFormValue("star") != ""
+	body := r.PostFormValue("body")
+	project := r.PostFormValue("project")
+	attachmentIDs := readAttachmentHashes(r)
+
+	// Remove carriage returns entirely. Why? Because it fits my use case, and because sod MS-DOS.
+	body = strings.Replace(body, "\r", "", -1)
+	for len(body) > 0 && body[len(body)-1] == '\n' {
+		body = body[0 : len(body)-1]
 	}
 
 	getv := r.URL.Query()
 	getv.Del("failure")
 	getv.Del("success")
-	if nonFatalError != nil {
+
+	err := saveJournalEntry(timestamp, body, project, attachmentIDs, starred)
+	if err != nil {
+		log.Printf("error saving journal entry: %v", err)
 		getv.Set("failure", "1")
 	} else {
 		getv.Set("success", "1")
+		if draft_id := r.PostFormValue("draft_id"); draft_id != "" {
+			// We've saved this post - no need to keep the draft around
+			draftsMutex.Lock()
+			delete(drafts, draft_id)
+			draftsMutex.Unlock()
+		}
 	}
 
 	w.Header().Set("Location", path.Base(r.URL.Path)+"?"+getv.Encode())
@@ -337,6 +431,7 @@ func SaveDraftHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	post_body := r.PostFormValue("body")
+	project := r.PostFormValue("project")
 
 	draftsMutex.Lock()
 	defer draftsMutex.Unlock()
@@ -344,9 +439,11 @@ func SaveDraftHandler(w http.ResponseWriter, r *http.Request) {
 		delete(drafts, draft_id)
 	} else {
 		drafts[draft_id] = draftEntry{
-			LastEdit: time.Now(),
-			Expires:  time.Now().Add(DraftTimeout),
-			Body:     post_body,
+			LastEdit:      time.Now(),
+			Expires:       time.Now().Add(DraftTimeout),
+			Body:          post_body,
+			Project:       project,
+			AttachmentIDs: readAttachmentHashes(r),
 		}
 	}
 
